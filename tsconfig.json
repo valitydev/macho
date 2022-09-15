@@ -1,0 +1,14 @@
+{
+    "compilerOptions": {
+        "target": "es5",
+        "module": "commonjs",
+        "moduleResolution": "node",
+        "types": ["node", "chai", "memory-cache", "mocha", "moment"],
+        "lib": ["es5", "es6", "dom"],
+        "typeRoots": ["./node_modules/@types"],
+        "rootDir": "./",
+        "outDir": "build"
+    },
+    "include": ["test/**/*.spec.ts"],
+    "exclude": ["node_modules"]
+}

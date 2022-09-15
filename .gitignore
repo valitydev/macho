@@ -1,0 +1,4 @@
+/build/
+/node_modules/
+/api/**/codegen/
+mocha-tests
