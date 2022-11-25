@@ -6,11 +6,7 @@ import {
     InvoiceTemplatesApiFp,
     PaymentMethod
 } from '../../api/capi-v2/codegen';
-import {
-    assertSimpleInvoiceTemplate,
-    assertSimpleInvoiceWithTemplate,
-    simpleInvoiceTemplateParams
-} from '../../api/capi-v2/params/invoice-template-params/invoice-template-params';
+import { simpleInvoiceTemplateParams } from '../../api/capi-v2/params/invoice-template-params/invoice-template-params';
 import { invoiceParamsWithTemplate } from '../../api/capi-v2/params';
 import { CAPIDispatcher } from '../../utils/codegen-utils';
 
@@ -28,61 +24,33 @@ export class InvoiceTemplatesActions {
     createSimpleInvoiceTemplate(shopID: string): Promise<InvoiceTemplateAndToken> {
         let templateParams: InvoiceTemplateCreateParams = simpleInvoiceTemplateParams(shopID);
         return this.dispatcher
-            .callMethod(this.api.createInvoiceTemplate, templateParams)
-            .then(invoiceTemplateAndToken => {
-                invoiceTemplateAndToken.should.to.have.property('invoiceTemplate');
-                invoiceTemplateAndToken.should.to.have.property('invoiceTemplateAccessToken');
-                const invoiceTemplate = invoiceTemplateAndToken.invoiceTemplate;
-                assertSimpleInvoiceTemplate(invoiceTemplate, shopID);
-                return invoiceTemplateAndToken;
-            });
+            .callMethod(this.api.createInvoiceTemplate, templateParams);
     }
 
-    createInvoiceWithTemplate(invoiceTemplateID: string, shopID: string): Promise<InvoiceAndToken> {
+    createInvoiceWithTemplate(invoiceTemplateID: string): Promise<InvoiceAndToken> {
         return this.dispatcher
             .callMethod(
                 this.api.createInvoiceWithTemplate,
                 invoiceTemplateID,
                 invoiceParamsWithTemplate()
-            )
-            .then(invoiceAndToken => {
-                invoiceAndToken.should.to.have.property('invoice');
-                invoiceAndToken.should.to.have.property('invoiceAccessToken');
-                const invoice = invoiceAndToken.invoice;
-                assertSimpleInvoiceWithTemplate(
-                    invoice,
-                    invoiceParamsWithTemplate().amount,
-                    shopID
-                );
-                return invoiceAndToken;
-            });
+            );
     }
 
-    getInvoiceTemplateById(invoiceTemplateID: string, shopID: string): Promise<InvoiceTemplate> {
+    getInvoiceTemplateById(invoiceTemplateID: string): Promise<InvoiceTemplate> {
         return this.dispatcher
-            .callMethod(this.api.getInvoiceTemplateByID, invoiceTemplateID)
-            .then(invoiceTemplate => {
-                assertSimpleInvoiceTemplate(invoiceTemplate, shopID);
-                return invoiceTemplate;
-            });
+            .callMethod(this.api.getInvoiceTemplateByID, invoiceTemplateID);
     }
 
     updateInvoiceTemplate(
         invoiceTemplateCreateParams: InvoiceTemplateCreateParams,
-        invoiceTemplateID: string,
-        shopID: string,
-        assertParams?: {}
+        invoiceTemplateID: string
     ): Promise<InvoiceTemplate> {
         return this.dispatcher
             .callMethod(
                 this.api.updateInvoiceTemplate,
                 invoiceTemplateID,
                 invoiceTemplateCreateParams
-            )
-            .then(invoiceTemplate => {
-                assertSimpleInvoiceTemplate(invoiceTemplate, shopID, assertParams);
-                return invoiceTemplate;
-            });
+            );
     }
 
     deleteInvoiceTemplate(invoiceTemplateID: string): Promise<void> {
@@ -91,9 +59,6 @@ export class InvoiceTemplatesActions {
 
     getInvoicePaymentMethodsByTemplateID(invoiceTemplateID: string): Promise<PaymentMethod[]> {
         return this.dispatcher
-            .callMethod(this.api.getInvoicePaymentMethodsByTemplateID, invoiceTemplateID)
-            .then(paymentMethods => {
-                return paymentMethods;
-            });
+            .callMethod(this.api.getInvoicePaymentMethodsByTemplateID, invoiceTemplateID);
     }
 }
