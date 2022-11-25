@@ -10,12 +10,10 @@ export PKG_CACHE_PATH
 TESTS_ARGS = \
 	--external-login '$(TT_LOGIN)' \
 	--external-password '$(TT_PASSWORD)' \
-	--internal-login '$(TT_INTERNAL_LOGIN)' \
-	--internal-password '$(TT_INTERNAL_PASSWORD)' \
-	--capi-endpoint $(TT_CAPI_ENDPOINT) \
+	--auth-endpoint $(TT_AUTH_ENDPOINT) \
+	--api-endpoint $(TT_API_ENDPOINT) \
 	--url-shortener-endpoint $(TT_URLSHORT_ENDPOINT) \
 	--test-webhook-receiver-endpoint $(TT_TEST_WEBHOOK_RECEIVER_ENDPOINT) \
-	--auth-endpoint $(TT_AUTH_ENDPOINT) \
 	--admin-endpoint $(TT_ADMIN_ENDPOINT) \
 	--proxy-endpoint $(TT_PROXY_ENDPOINT)
 
