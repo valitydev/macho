@@ -1,5 +1,5 @@
 import * as chai from 'chai';
-import { LogicError, Refund, RefundParams } from '../api/capi-v2/codegen';
+import { Payment, Refund, RefundParams } from '../api/capi-v2/codegen';
 import { InvoicesEventActions, isRefundSucceeded, PaymentsActions } from '../actions/capi-v2';
 import { AuthActions } from '../actions';
 
@@ -20,16 +20,18 @@ export class RefundConditions {
         return this.instance;
     }
 
-    private constructor(token: string) {
+    constructor(token: string) {
         this.paymentsActions = new PaymentsActions(token);
         this.invoiceEventActions = new InvoicesEventActions(token);
     }
-    async provideRefund(invoiceID: string, paymentID: string, params: RefundParams) {
-        const refund = await this.paymentsActions.createRefund(invoiceID, paymentID, params);
-        refund.should.have.property('amount').to.equal(params.amount);
+
+    async proceedRefund(payment: Payment, params: RefundParams): Promise<Refund> {
+        const refund = await this.paymentsActions.createRefund(payment.invoiceID, payment.id, params);
         await this.invoiceEventActions.waitConditions(
-            [isRefundSucceeded(paymentID, refund.id)],
-            invoiceID
+            [isRefundSucceeded(payment.id, refund.id)],
+            payment.invoiceID
         );
+        return refund;
     }
+
 }
