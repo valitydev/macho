@@ -1,6 +1,5 @@
 import { AuthActions } from '../actions';
-import { ClaimsActions, PartiesActions } from '../actions/capi-v2';
-import { PapiClaimsActions } from '../actions/papi-v1';
+import { PartiesActions } from '../actions/capi-v2';
 
 describe('Claims', () => {
     let partyID: string;

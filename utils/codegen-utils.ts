@@ -45,11 +45,6 @@ export class WAPIDispatcher extends APIDispatcher {
         super(`${wapiEndpoint}/v0`, requestOptions);
     }
 }
-export class WapiPrivdocDispatcher extends APIDispatcher {
-    constructor(requestOptions?: any) {
-        super(`${privdocEndpoint}/v0`, requestOptions);
-    }
-}
 
 export class WapiPayresDispatcher extends APIDispatcher {
     constructor(requestOptions?: any) {
