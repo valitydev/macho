@@ -2,8 +2,8 @@ import { getAccessToken } from '../api';
 import { externalLogin, externalPassword, internalLogin, internalPassword } from '../settings';
 
 export class AuthActions {
-    private externalAccessToken: string;
-    private internalAccessToken: string;
+    private externalAccessToken: string | undefined = undefined;
+    private internalAccessToken: string | undefined = undefined;
 
     private static instance: AuthActions;
 

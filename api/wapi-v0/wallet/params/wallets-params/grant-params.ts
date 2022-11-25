@@ -1,5 +1,5 @@
 import { DestinationGrantRequest, WalletGrantRequest } from '../../codegen';
-import moment = require('moment');
+import moment from 'moment';
 
 export function getWalletGrantParams(): WalletGrantRequest {
     return {

@@ -1,11 +1,11 @@
 {
-  "name": "wetkitty-integration-tests",
+  "name": "macho-integration-tests",
   "version": "1.0.0",
   "description": "",
   "private": true,
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/rbkmoney/wetkitty.git"
+    "url": "https://github.com/empayre/macho"
   },
   "scripts": {
     "prettier": "prettier \"**/*.{js,ts,md,json,prettierrc}\" --write",
@@ -13,31 +13,40 @@
   },
   "author": "",
   "dependencies": {
-    "chai": "4.1.2",
-    "chai-moment-js": "file:lib/chai-moment-js",
+    "axios": "^0.27.2",
+    "chai": "^4.3.6",
+    "chai-date-string": "^0.1.0",
+    "chai-as-promised": "^7.1.1",
+    "chai-moment": "^0.1.0",
     "chai-url": "1.0.4",
-    "glob": "7.1.2",
+    "glob": "^8.0.3",
     "http": "0.0.0",
+    "isomorphic-fetch": "^3.0.0",
     "lodash": "^4.17.15",
     "memory-cache": "0.2.0",
-    "mocha": "4.0.1",
+    "mocha": "^10.0.0",
     "moment": "^2.24.0",
-    "pkg": "4.3.0-beta.5",
+    "node-fetch": "^2.6.7",
+    "pkg": "^5.8.0",
     "portable-fetch": "3.0.0",
-    "request": "2.83.0",
     "url": "0.11.0",
-    "yargs": "10.0.3"
+    "yargs": "^17.5.1"
   },
   "devDependencies": {
-    "@types/chai": "4.0.5",
+    "@types/chai": "^4.3.3",
+    "@types/chai-as-promised": "^7.1.5",
+    "@types/chai-moment": "^0.1.1",
+    "@types/glob": "^8.0.0",
     "@types/memory-cache": "0.2.0",
     "@types/mocha": "2.2.44",
-    "@types/node": "8.0.53",
+    "@types/node": "~16",
+    "@types/node-fetch": "^2.6.2",
     "@types/request": "^2.48.3",
+    "@types/yargs": "^17.0.12",
     "dotenv": "5.0.1",
     "prettier": "1.16.4",
     "rimraf": "2.6.2",
     "ts-node": "5.0.1",
-    "typescript": "2.6.1"
+    "typescript": "~4"
   }
 }

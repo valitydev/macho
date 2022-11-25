@@ -1,5 +1,5 @@
 import { Webhook, WebhookScope } from '../../codegen';
-import * as request from 'request';
+import fetch from 'node-fetch';
 import { testWebhookReceiverEndpoint, testWebhookReceiverInternal } from '../../../../settings';
 
 export function webhookParams(scope: WebhookScope, testId: string): Webhook {
@@ -10,37 +10,17 @@ export function webhookParams(scope: WebhookScope, testId: string): Webhook {
 }
 
 export function getEvents(testId: string): Promise<string> {
-    return new Promise((resolve, reject) => {
-        request.get(
-            {
-                url: `${testWebhookReceiverEndpoint}/search/get/${testId}`
-            },
-            (err, response) => {
-                if (err) {
-                    reject(err);
-                } else {
-                    response.statusCode.should.eq(200);
-                    resolve(response.body);
-                }
-            }
-        );
-    });
+    return fetch(`${testWebhookReceiverEndpoint}/search/get/${testId}`)
+        .then(response => {
+                response.status.should.eq(200);
+                return response.text();
+            });
 }
 
 export function countEvents(testId: string): Promise<number> {
-    return new Promise((resolve, reject) => {
-        request.get(
-            {
-                url: `${testWebhookReceiverEndpoint}/search/count/${testId}`
-            },
-            (err, response) => {
-                if (err) {
-                    reject(err);
-                } else {
-                    response.statusCode.should.eq(200);
-                    resolve(JSON.parse(response.body).count);
-                }
-            }
-        );
-    });
+    return fetch(`${testWebhookReceiverEndpoint}/search/count/${testId}`)
+        .then(response => {
+            response.status.should.eq(200);
+            return response.json().then(body => body['count']);
+        });
 }

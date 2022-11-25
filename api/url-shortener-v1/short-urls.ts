@@ -1,20 +1,18 @@
-import * as chai from 'chai';
 import guid from '../../utils/guid';
-import { urlShortenerEndpoint } from '../../settings';
+import { fetch, urlShortenerEndpoint } from '../../settings';
 import { ShortenerApiFp, ShortenedUrl } from './codegen';
-
-chai.should();
 
 export class ShortUrls {
     private defaultOptions = {
         headers: {
-            'Content-Type': 'application/json; charset=utf-8'
+            'Content-Type': 'application/json; charset=utf-8',
+            'Origin': 'https://dashboard.stage.empayre.com'
         }
     };
 
     private basePath = `${urlShortenerEndpoint}/v1`;
 
-    private api;
+    private api: any;
 
     constructor(accessToken: string) {
         this.api = ShortenerApiFp({
@@ -23,16 +21,19 @@ export class ShortUrls {
     }
 
     shortenUrl(sourceUrl: string, expiresAt: any): Promise<ShortenedUrl> {
-        return this.api.shortenUrl(guid(), { sourceUrl, expiresAt }, this.defaultOptions)(
-            undefined,
-            this.basePath
+        return this.issueRequest(
+            this.api.shortenUrl(guid(), { sourceUrl, expiresAt }, this.defaultOptions)
+        );
+    }
+        
+    deleteShortenedUrl(id: string): Promise<void> {
+        return this.issueRequest(
+            this.api.deleteShortenedUrl(guid(), id, this.defaultOptions)
         );
     }
 
-    deleteShortenedUrl(id: string): Promise<void> {
-        return this.api.deleteShortenedUrl(guid(), id, this.defaultOptions)(
-            undefined,
-            this.basePath
-        );
+    private issueRequest(requestFn: Function): Promise<any> {
+        return requestFn(fetch, this.basePath);
     }
+
 }

@@ -1,24 +1,27 @@
-import * as request from 'request';
-import * as http from 'http';
-import * as chai from 'chai';
-import * as moment from 'moment';
-import * as chaiMoment from 'chai-moment-js';
+import axios, { AxiosError, AxiosResponse } from 'axios';
+import chai from 'chai';
+import chaiAsPromised from 'chai-as-promised';
+import chaiMoment from 'chai-moment';
+import chaiUrl from 'chai-url';
+import moment from 'moment';
 
 import { ShortUrls } from '../api/url-shortener-v1';
 import { AuthActions } from '../actions';
 
-chai.use(require('chai-url'));
-chai.use(chaiMoment);
 chai.should();
+chai.use(chaiUrl);
+chai.use(chaiMoment);
+chai.use(chaiAsPromised);
 
 describe('Short URL', () => {
     let accessToken: string;
 
     before(async () => {
-        accessToken = await AuthActions.authExternal('url-shortener');
+        accessToken = await AuthActions.authExternal();
     });
 
-    const sourceUrl = 'http://checkout.rbk.test:8080/checkout.html';
+    // FIXME
+    const sourceUrl = 'http://localhost:8000/checkout.html';
     let shortenedUrlID: string;
     let shortenedUrl: string;
 
@@ -29,24 +32,24 @@ describe('Short URL', () => {
         result.id.should.be.a('string');
         result.shortenedUrl.should.be.a('string');
         // @ts-ignore
-        result.shortenedUrl.should.have.hostname('short.rbk.test');
-        result.expiresAt.should.be.same.moment(expiresAt);
+        result.shortenedUrl.should.have.hostname('shrt.stage.empayre.com');
+        result.expiresAt.should.be.sameMoment(expiresAt);
         result.sourceUrl.should.be.eq(sourceUrl);
         shortenedUrlID = result.id;
         shortenedUrl = result.shortenedUrl;
     });
 
-    it('should be resolved successfully', done => {
-        let req = { url: shortenedUrl, followRedirect: false };
-        request(req, (error, response: http.IncomingMessage, body) => {
-            if (error) {
-                return done(error);
+    it('should be resolved successfully', async () => {
+        const response = await axios.get(
+            shortenedUrl,
+            {
+                maxRedirects: 0,
+                validateStatus: (status_1) => status_1 >= 200 && status_1 < 400
             }
-            response.statusCode.should.be.eq(301, body);
-            response.headers.location.should.not.be.undefined;
-            response.headers.location.should.be.eq(sourceUrl);
-            done();
-        });
+        );
+        response.status.should.be.eq(301);
+        response.headers.should.have.ownProperty('location');
+        response.headers['location'].should.be.eq(sourceUrl);
     });
 
     it('should be deleted successfully', () => {
@@ -54,14 +57,12 @@ describe('Short URL', () => {
         return shortUrls.deleteShortenedUrl(shortenedUrlID);
     });
 
-    it('should not be resolved anymore', done => {
-        request(shortenedUrl, (error, response: http.IncomingMessage, body) => {
-            if (error) {
-                return done(error);
-            }
-            response.statusCode.should.be.eq(404, body);
-            response.headers.should.not.have.property('location');
-            done();
-        });
+    it('should not be resolved anymore', () => {
+        return axios.get(shortenedUrl)
+            .should.eventually.be.rejectedWith(AxiosError)
+            .then((error: AxiosError) => {
+                error.response.status.should.be.eq(404);
+                error.response.headers.should.not.have.ownProperty('location')
+            });
     });
 });
