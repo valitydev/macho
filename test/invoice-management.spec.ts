@@ -1,16 +1,28 @@
 import * as chai from 'chai';
-import * as moment from 'moment';
-import { AnapiSearchActions, BinapiLookupActions, AuthActions, PartiesActions } from '../actions';
+import chaiAsPromised from 'chai-as-promised';
+import chaiMoment from 'chai-moment';
+import moment from 'moment';
+import { AxiosError } from 'axios';
+import {
+    AuthActions,
+    PartiesActions,
+    AnapiSearchActions
+} from '../actions';
 import { ShopConditions } from '../conditions';
 import { InvoicesActions, InvoicesEventActions } from '../actions/capi-v2';
-import delay from '../utils/delay';
+import { Invoice, InvoiceParams } from '../api/capi-v2/codegen';
+import { assertSimpleInvoice, simpleInvoiceParams } from '../api/capi-v2/params';
 import guid from '../utils/guid';
+import until from '../utils/until';
 
 chai.should();
+chai.use(chaiAsPromised);
+chai.use(chaiMoment);
 
 describe('Invoice Management', () => {
     let invoiceActions: InvoicesActions;
     let invoiceEventActions: InvoicesEventActions;
+    let searchActions: AnapiSearchActions;
     let liveShopID: string;
     let partyID: string;
 
@@ -24,73 +36,87 @@ describe('Invoice Management', () => {
         liveShopID = liveShop.id;
         invoiceActions = new InvoicesActions(externalAccessToken);
         invoiceEventActions = new InvoicesEventActions(externalAccessToken);
+        searchActions = new AnapiSearchActions(externalAccessToken);
         const partiesActions = new PartiesActions(externalAccessToken);
         const party = await partiesActions.getActiveParty();
         partyID = party.id;
     });
 
     describe('Create and search invoice', () => {
-        let invoiceID;
+        let invoiceID: string;
 
         it('should successfully create invoice', async () => {
-            const invoiceAndToken = await invoiceActions.createSimpleInvoice(liveShopID);
-            invoiceID = invoiceAndToken.invoice.id;
+            const invoiceParams = simpleInvoiceParams(liveShopID);
+            const result = await invoiceActions.createInvoice(invoiceParams);
+            result.should.to.have.property('invoice');
+            assertSimpleInvoice(result.invoice, invoiceParams.amount, liveShopID);
+            invoiceID = result.invoice.id;
+            result.invoice.should.have
+                .property('dueDate').to.be.sameMoment(invoiceParams.dueDate);
+            result.should.have
+                .nested.property('invoiceAccessToken.payload')
+                .to.be.a('string');
         });
 
-        async function pollAnapiSearchInvoices() {
-            const searchActions = await AnapiSearchActions.getInstance();
-            let result = [];
-            while (result.length === 0) {
-                result = (await searchActions.searchInvoices(
+        it('should search created invoice', async () => {
+            const { result } =
+                await until(() => searchActions.searchInvoices({
                     partyID,
-                    moment().subtract(1, 'minutes'),
-                    moment(),
-                    10,
-                    liveShopID,
-                    undefined,
+                    fromTime: moment().subtract(7, 'days'),
+                    toTime: moment(),
+                    limit: 10,
+                    paymentInstitutionRealm: 'test',
+                    shopID: liveShopID,
                     invoiceID
-                )).result;
-                await delay(500);
-            }
-            return result;
-        }
-
-        it('should search invoice in anapi', async () => {
-            const result = await Promise.race([delay(10000), pollAnapiSearchInvoices()]);
-            if (!result) {
-                throw new Error('Wait searchInvoices result timeout');
-            }
+                }))
+                    .satisfy(search => {
+                        if (search.result.length < 1) {
+                            throw new Error('Search returned 0 invoices');
+                        }
+                    });
             result.length.should.eq(1);
-            result[0].id.should.eq(invoiceID);
+            result[0].should.have.property('id').eq(invoiceID);
         });
 
         it('should return logic error invoice have empty cart', async () => {
-            await invoiceActions.createInvoiceWithoutCart();
+            const error =
+                await invoiceActions.createSimpleInvoice(liveShopID, 10000, {cart: []})
+                    .should.eventually.be.rejectedWith(AxiosError);
+            error.response.status.should.be.eq(400);
+            error.response.data.should.include({
+                code: 'invalidRequest',
+                message: 'Request parameter: InvoiceParams, ' +
+                    'error type: schema_violated, ' +
+                    'description: Wrong size. Path to item: cart'
+            });
         });
 
         it('should return logic error wrong shopId', async () => {
-            await invoiceActions.createInvoiceWithWrongShopID();
+            const error =
+                await invoiceActions.createSimpleInvoice('SHOULDBENOSUCHSHOP')
+                    .should.eventually.be.rejectedWith(AxiosError);
+            error.response.status.should.be.eq(400);
+            error.response.data.should.to.include({
+                code: 'invalidShopID',
+                message: 'Shop not found'
+            });
         });
+
+        it('should be cancelled if dueDate in the past', async () => {
+            const past = moment().subtract(15, 'days').utc().toDate();
+            const result = await invoiceActions.createSimpleInvoice(liveShopID, 10000, {dueDate: past});
+            result.should.have.property('invoice');
+            const invoiceID = result.invoice.id;
+            await until(() => invoiceActions.getInvoiceById(invoiceID)).satisfy(invoice => {
+                if (invoice.status !== Invoice.StatusEnum.Cancelled) {
+                    throw new Error(`Invoice ${invoiceID} is still ${invoice.status}`);
+                }
+            })
+        });
+
     });
 
-    describe('Lookup card bin', () => {
-        let accessToken: string;
-
-        before(async () => {
-            accessToken = await AuthActions.authExternal();
-        });
-
-        async function LookupCardBin(cardNumber: string) {
-            const lookupActions = new BinapiLookupActions(accessToken);
-            return await lookupActions.lookupCardInfo(cardNumber);
-        }
-
-        it('should search bin in binapi', async () => {
-            await LookupCardBin('4242424242424242');
-        });
-    });
-
-    describe('Create Invoice idempotency', () => {
+    describe('Idempotency', () => {
         let defaultParams: {
             dueDate: Date;
             amount: number;
@@ -99,18 +125,18 @@ describe('Invoice Management', () => {
         before(async () => {
             const dueDate = moment('2039-04-24')
                 .utc()
-                .format() as any;
+                .toDate();
             const amount = 10101;
             defaultParams = { dueDate, amount };
         });
 
-        it('[CAPI-v2]should successfully create invoice idempotent(externalID=undefined)', async () => {
-            const invoice_1 = await invoiceActions.createSimpleInvoice(liveShopID);
-            const invoice_2 = await invoiceActions.createSimpleInvoice(liveShopID);
-            invoice_1.invoice.id.should.not.eq(invoice_2.invoice.id);
+        it('should successfully create invoice idempotent (externalID: undefined)', async () => {
+            const invoice1 = await invoiceActions.createSimpleInvoice(liveShopID);
+            const invoice2 = await invoiceActions.createSimpleInvoice(liveShopID);
+            invoice1.invoice.id.should.not.eq(invoice2.invoice.id);
         });
 
-        it('should successfully create invoice idempotent', async () => {
+        it('should idempotently create single invoice after several attempts', async () => {
             let promises = [];
             let tries = 10;
             const externalID = guid();
@@ -124,55 +150,95 @@ describe('Invoice Management', () => {
                 tries--;
             }
             const invoices = await Promise.all(promises);
-            const id = invoices[0].invoice.id;
-            for (let invoice of invoices) {
-                id.should.eq(invoice.invoice.id);
+            for (const invoice of invoices) {
+                invoices[0].invoice.id.should.be.eq(invoice.invoice.id);
             }
         });
 
-        it('should failed create second invoice idempotent', async () => {
+        it('should fail to create conflicting invoice', async () => {
             const externalID = guid();
-            let params = {
-                ...defaultParams,
+            const params1 = {
+                dueDate: defaultParams.dueDate,
                 externalID
             };
-            const invoice_1 = await invoiceActions.createSimpleInvoice(
+            const amount1 = 10101;
+            const invoice1 = await invoiceActions.createSimpleInvoice(
                 liveShopID,
-                params.amount,
-                params
+                amount1,
+                params1
             );
-            const invoiceID = invoice_1.invoice.id;
-            params = {
-                ...params,
-                amount: params.amount + 1
-            };
-            const error = await invoiceActions.getCreateInvoiceError(liveShopID, params);
-            error.message.should.to.include({
+            const error =
+                await invoiceActions.createSimpleInvoice(
+                    liveShopID,
+                    amount1 + 1,
+                    params1
+                )
+                .should.eventually.be.rejectedWith(AxiosError);
+            error.response.status.should.be.equal(409);
+            error.response.data.should.include({
                 externalID: externalID,
-                id: invoiceID,
+                id: invoice1.invoice.id,
                 message: "This 'externalID' has been used by another request"
             });
         });
+
     });
 
-    describe('Create Invoice Access Token', () => {
-        it('should successfully create invoice access token', async () => {
-            const invoiceAndToken = await invoiceActions.createSimpleInvoice(liveShopID);
-            await invoiceActions.createInvoiceAccessToken(invoiceAndToken.invoice.id);
-        });
+    it('should successfully issue invoice access token', async () => {
+        const invoiceAndToken = await invoiceActions.createSimpleInvoice(liveShopID);
+        const response = await invoiceActions.createInvoiceAccessToken(invoiceAndToken.invoice.id);
+        response.should.to.have.property('payload').to.be.a('string');
     });
 
     describe('Invoice events', () => {
         let invoiceID: string;
 
         before(async () => {
-            const invoiceAndToken = await invoiceActions.createSimpleInvoice(liveShopID);
-            invoiceID = invoiceAndToken.invoice.id;
+            const { invoice } = await invoiceActions.createSimpleInvoice(
+                liveShopID,
+                10000,
+                { dueDate: moment() }
+            );
+            invoiceID = invoice.id;
         });
 
         it('should successfully get invoice events', async () => {
-            await invoiceEventActions.getEvents(invoiceID);
+
+            const events1 = await invoiceEventActions.getEvents(invoiceID, 1);
+            events1.should.be.an('array');
+            events1.length.should.be.eq(1);
+            events1[0].id.should.be.eq(1);
+            events1[0].changes.should.be.an('array');
+            events1[0].changes[0]
+                .should.include({changeType: 'InvoiceCreated'});
+            events1[0].changes[0]
+                .should.have.property('invoice')
+                .that.includes({
+                    id: invoiceID,
+                    shopID: liveShopID,
+                    amount: 10000,
+                    status: 'unpaid'
+                });
+
+            const events2 = await until(() => invoiceEventActions.getEvents(invoiceID, 1, 1))
+                .satisfy(events => {
+                    if (events.length < 1) {
+                        throw new Error(`No invoice ${invoiceID} events since event 1`);
+                    }
+                });
+            events2.length.should.be.eq(1);
+            events2[0].id.should.be.eq(2);
+            events2[0].changes[0].should.include({
+                changeType: 'InvoiceStatusChanged',
+                status: 'cancelled'
+            });
+
+            const events = await invoiceEventActions.getEvents(invoiceID);
+            events.should.be.an('array');
+            events.length.should.be.eq(2);
+            
         });
+
     });
 
     describe('Invoice payment methods', () => {
@@ -184,8 +250,14 @@ describe('Invoice Management', () => {
         });
 
         it('should successfully get invoice payment methods', async () => {
-            await invoiceActions.getInvoicePaymentMethods(invoiceID);
+            const methods = await invoiceActions.getInvoicePaymentMethods(invoiceID);
+            methods.should.have.deep.members([
+                { method: 'BankCard', paymentSystems: ['MASTERCARD', 'VISA'] }
+                // { method: 'DigitalWallet', providers: ['qiwi'] },
+                // { method: 'PaymentTerminal', providers: ['euroset'] }
+            ]);
         });
+
     });
 
     describe('Invoice rescind', () => {
@@ -215,29 +287,22 @@ describe('Invoice Management', () => {
     });
 
     describe('Invoice terms violation', () => {
+
         it('should successfully create invoice', async () => {
-            let params = {
-                amount: 4100000000
-            };
-            await invoiceActions.createSimpleInvoice(liveShopID, params.amount, params);
+            await invoiceActions.createSimpleInvoice(liveShopID, 4100000);
         });
 
         it('should fail to create invoice with amount error', async () => {
-            let params = {
-                amount: 4300000000,
-                cart: [
-                    {
-                        product: 'Very cool product',
-                        quantity: 1,
-                        price: 4300000000
-                    }
-                ]
-            };
-            const error = await invoiceActions.getCreateInvoiceError(liveShopID, params);
-            error.message.should.to.include({
+            const params: InvoiceParams = simpleInvoiceParams(liveShopID, 4300000);
+            const error = await invoiceActions.createInvoice(params)
+                .should.eventually.be.rejectedWith(AxiosError);
+            error.response.status.should.be.eq(400);
+            error.response.data.should.include({
                 code: 'invoiceTermsViolated',
                 message: 'Invoice parameters violate contract terms'
             });
         });
+
     });
+
 });

@@ -1,15 +1,19 @@
-import * as moment from 'moment';
+import moment from 'moment';
 import { InvoiceLineTaxMode, InvoiceLineTaxVAT, InvoiceParams } from '../../codegen';
 import { Invoice, InvoiceParamsWithTemplate } from '../../index';
 
-export function simpleInvoiceParams(shopID: string, params?: {}): InvoiceParams {
+export function simpleInvoiceParams(
+    shopID: string,
+    amount: number = 10000,
+    params?: {}
+): InvoiceParams {
     return {
         shopID: shopID,
         dueDate: moment()
             .add(1, 'days')
             .utc()
-            .format() as any,
-        amount: 10000,
+            .toDate(),
+        amount: amount,
         currency: 'RUB',
         product: 'Test product',
         description: 'Test product description',
@@ -17,7 +21,7 @@ export function simpleInvoiceParams(shopID: string, params?: {}): InvoiceParams 
             {
                 product: 'Product 1',
                 quantity: 1,
-                price: 10000,
+                price: amount,
                 taxMode: {
                     type: InvoiceLineTaxMode.TypeEnum.InvoiceLineTaxVAT,
                     rate: InvoiceLineTaxVAT.RateEnum._10

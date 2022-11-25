@@ -24,12 +24,13 @@ export class InvoicesEventActions extends EventActions {
         });
     }
 
-    async getEvents(invoiceID: string): Promise<InvoiceEvent[]> {
+    async getEvents(invoiceID: string, limit: number = 1000, after?: number): Promise<InvoiceEvent[]> {
         return await this.dispatcher.callMethod(
             this.api.getInvoiceEvents,
             invoiceID,
-            1000,
-            undefined
+            limit,
+            undefined,
+            after
         );
     }
 }
