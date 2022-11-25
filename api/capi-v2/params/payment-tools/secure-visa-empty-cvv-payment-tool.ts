@@ -4,7 +4,7 @@ export const secureEmptyCVVVisaPaymentTool = {
     paymentTool: {
         paymentToolType: PaymentTool.PaymentToolTypeEnum.CardData,
         cardNumber: '4012888888881881',
-        expDate: '12/20',
+        expDate: '12/29',
         cardHolder: 'LEXA SVOTIN'
     } as CardData,
     clientInfo: {

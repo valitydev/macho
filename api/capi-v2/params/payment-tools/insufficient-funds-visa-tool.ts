@@ -4,7 +4,7 @@ export const insufficientFundsVisaTool = {
     paymentTool: {
         paymentToolType: PaymentTool.PaymentToolTypeEnum.CardData,
         cardNumber: '4000000000000002',
-        expDate: '12/20',
+        expDate: '12/29',
         cvv: '123',
         cardHolder: 'LEXA SVOTIN'
     } as CardData,

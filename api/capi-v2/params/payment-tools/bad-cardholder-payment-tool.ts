@@ -4,7 +4,7 @@ export const badCardholderPaymentTool = {
     paymentTool: {
         paymentToolType: PaymentTool.PaymentToolTypeEnum.CardData,
         cardNumber: '4242424242424242',
-        expDate: '12/20',
+        expDate: '12/29',
         cvv: '123',
         cardHolder: 'ЛЕХА СВОТИН 123'
     } as CardData,
