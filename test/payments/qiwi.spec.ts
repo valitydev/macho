@@ -12,6 +12,7 @@ import { ShopConditions } from '../../conditions/shop-conditions';
 import { ProxyApiForTests } from '../../api/proxy-api';
 import { provideInteract } from '../../utils/provide-interact';
 import { PaymentInteractionRequested } from '../../api/capi-v2/codegen';
+import { qiwiPaymentTool } from '../../api';
 
 describe('QIWI', () => {
     let invoiceActions: InvoicesActions;
@@ -34,17 +35,15 @@ describe('QIWI', () => {
     });
 
     it('should successfully pay an invoice w/ qiwi wallet', async () => {
-        const invoiceAndToken = await invoiceActions.createSimpleInvoice(liveShopID);
-        const invoiceID = invoiceAndToken.invoice.id;
-        const invoiceAccessToken = invoiceAndToken.invoiceAccessToken.payload;
-        const tokensActions = new TokensActions(invoiceAccessToken);
-        const paymentResource = await tokensActions.createQIWIPaymentResource();
-        const payment = await paymentActions.createInstantPayment(invoiceID, paymentResource);
-        const event = await invoiceEventActions.waitConditions([isInvoiceInteracted()], invoiceID);
+        const { invoice, invoiceAccessToken } = await invoiceActions.createSimpleInvoice(liveShopID);
+        const tokensActions = new TokensActions(invoiceAccessToken.payload);
+        const paymentResource = await tokensActions.createPaymentResource(qiwiPaymentTool);
+        const payment = await paymentActions.createInstantPayment(invoice.id, paymentResource);
+        const event = await invoiceEventActions.waitConditions([isInvoiceInteracted()], invoice.id);
         await provideInteract(event[0] as PaymentInteractionRequested);
         await invoiceEventActions.waitConditions(
             [isPaymentCaptured(payment.id), isInvoicePaid()],
-            invoiceID
+            invoice.id
         );
     });
 });
