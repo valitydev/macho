@@ -1,6 +1,5 @@
 import {
     DigitalWalletData,
-    DigitalWalletQIWI,
     PaymentTool,
     PaymentResourceParams
 } from '../../codegen';
@@ -8,9 +7,9 @@ import {
 export const qiwiPaymentTool = {
     paymentTool: {
         paymentToolType: PaymentTool.PaymentToolTypeEnum.DigitalWalletData,
-        digitalWalletType: DigitalWalletData.DigitalWalletTypeEnum.DigitalWalletQIWI,
-        phoneNumber: '+7911111111'
-    } as DigitalWalletQIWI,
+        provider: 'qiwi',
+        id: '+7911111111'
+    } as DigitalWalletData,
     clientInfo: {
         fingerprint: '71aadcee86e140f794924855f5e48aa9'
     }
