@@ -1,15 +1,28 @@
+import chai from 'chai';
+import chaiAsPromised from 'chai-as-promised';
+import { AxiosError } from 'axios';
 import { ShopConditions } from '../../conditions';
 import { AuthActions } from '../../actions';
 import { TokensActions, InvoicesActions } from '../../actions/capi-v2';
-import guid from '../../utils/guid';
-import { saneVisaPaymentTool } from '../../api/capi-v2/params/payment-tools/sane-visa-payment-tool';
-import { badCardholderPaymentTool } from '../../api/capi-v2/params/payment-tools/bad-cardholder-payment-tool';
-import { PaymentResourceParams } from '../../api/capi-v2/codegen/api';
-import { paymentParams } from '../../api/capi-v2/params/payment-params/payment-params';
+import {
+    saneVisaPaymentTool,
+    secureVisaPaymentTool,
+    cryptoPaymentTool,
+    badCardholderPaymentTool,
+    qiwiPaymentTool
+} from '../../api';
+import {
+    ClientInfo,
+    PaymentToolDetailsBankCard,
+    PaymentToolDetailsDigitalWallet,
+    PaymentToolDetailsCryptoWallet
+} from '../../api/capi-v2/codegen';
+
+chai.should();
+chai.use(chaiAsPromised);
 
 describe('Payment resource', () => {
     let tokensActions: TokensActions;
-    let paymentParams: PaymentResourceParams;
 
     before(async () => {
         const shopConditions = await ShopConditions.getInstance();
@@ -22,62 +35,75 @@ describe('Payment resource', () => {
         const invoiceAndToken = await invoiceActions.createSimpleInvoice(shop.id);
         const invoiceAccessToken = invoiceAndToken.invoiceAccessToken.payload;
         tokensActions = new TokensActions(invoiceAccessToken);
-        const externalID = guid();
-        paymentParams = {
-            ...saneVisaPaymentTool,
-            externalID
-        };
     });
-    // Now we cann't use simple compare for checking idepmotent feature.
-    // We must rewrite this tests, maybe use jose for decryption and more
-    // deep compare.
-    // it('Create idempotent successful', async () => {
-    //     let resource  = await tokensActions.createPaymentResource(paymentParams);
-    //     let resource2 = await tokensActions.createPaymentResource(paymentParams);
 
-    //     resource.should.to.deep.eq(resource2);
-    // });
+    it('should tokenize bank card payment resource', async () => {
+        const resource = await tokensActions.createPaymentResource(saneVisaPaymentTool);
+        resource.should.have.property('paymentToolToken').to.be.a('string');
+        resource.should.have.property('paymentSession').to.be.a('string');
+        resource.should.have.property('clientInfo').to.be.an('object');
+        resource.should.have.property('paymentToolDetails').to.be.an('object');
+        const clientInfo = resource['clientInfo'] as ClientInfo; // TODO swagger multi inheritance bug
+        clientInfo.should.have.property('fingerprint').to.be.a('string');
+        resource.paymentToolDetails.should.deep.eq({
+            cardNumberMask: '424242******4242',
+            last4: '4242',
+            first6: '424242',
+            detailsType: 'PaymentToolDetailsBankCard',
+            paymentSystem: 'VISA'
+        } as PaymentToolDetailsBankCard);
+    });
 
-    // it('Create resource with different sessionID successful', async () => {
-    //     const externalID = guid();
-    //     let params = {
-    //         ...paymentParams,
-    //         externalID
-    //     };
-    //     let resource  = await tokensActions.createPaymentResource(paymentParams);
-    //     let resource2 = await tokensActions.createPaymentResource(params);
-    //     resource.should.not.to.deep.eq(resource2);
-    // });
-
-    it('Create resource with different params failed', async () => {
-        let paymentTool = {
-            ...paymentParams.paymentTool,
-            cardNumber: '4111111111111111',
-            expDate: '01/21',
-            cardHolder: 'BukaBjaka', // not important(doesn't influence paymentToolToken generation)
-            cvv: '234' // see previous comment
-        };
-        let paymentParams2 = {
-            ...paymentParams,
-            paymentTool
-        };
-
-        let resource = await tokensActions.createPaymentResource(paymentParams);
-        let error = await tokensActions.createPaymentResourceError(paymentParams2);
-        error.message.should.to.include({
-            externalID: paymentParams.externalID,
-            message: "This 'externalID' has been used by another request"
+    it('should tokenize visa payment resource with user ip', async () => {
+        const ip = "1.2.3.4";
+        const resource = await tokensActions.createPaymentResource({
+            paymentTool: secureVisaPaymentTool.paymentTool,
+            clientInfo: {
+                ...secureVisaPaymentTool.clientInfo,
+                ip
+            }
         });
+        resource.should.have.property('paymentToolToken').to.be.a('string');
+        resource.should.have.property('paymentSession').to.be.a('string');
+        resource.should.have.property('paymentToolDetails').to.be.an('object');
+        resource.should.have.property('clientInfo').to.be.an('object');
+        resource.should.have.nested.property('clientInfo.ip').eq(ip);
+        resource.paymentToolDetails.should.deep.eq({
+            cardNumberMask: '401288******1881',
+            last4: '1881',
+            first6: '401288',
+            detailsType: 'PaymentToolDetailsBankCard',
+            paymentSystem: 'VISA'
+        } as PaymentToolDetailsBankCard);
     });
 
-    it('Refuse bad cardholder format', async () => {
-        const externalID = guid();
-        let params = {
-            ...badCardholderPaymentTool,
-            externalID
-        };
-        let error = await tokensActions.createPaymentResourceError(params);
-        error.message.should.to.include({
+    it('should tokenize qiwi wallet payment resource', async () => {
+        const resource = await tokensActions.createPaymentResource(qiwiPaymentTool);
+        resource.should.have.property('paymentToolToken').to.be.a('string');
+        resource.should.have.property('paymentSession').to.be.a('string');
+        resource.should.have.property('paymentToolDetails').to.be.an('object');
+        resource.paymentToolDetails.should.deep.eq({
+            detailsType: 'PaymentToolDetailsDigitalWallet',
+            provider: 'qiwi'
+        } as PaymentToolDetailsDigitalWallet);
+    });
+
+    it('should tokenize crypto wallet payment resource', async () => {
+        const resource = await tokensActions.createPaymentResource(cryptoPaymentTool);
+        resource.should.have.property('paymentToolToken').to.be.a('string');
+        resource.should.have.property('paymentSession').to.be.a('string');
+        resource.should.have.property('paymentToolDetails').to.be.an('object');
+        resource.paymentToolDetails.should.deep.eq({
+            detailsType: 'PaymentToolDetailsCryptoWallet',
+            cryptoCurrency: 'bitcoinCash'
+        } as PaymentToolDetailsCryptoWallet);
+    });
+
+    it('should refuse bad cardholder format', async () => {
+        const error =
+            await tokensActions.createPaymentResource(badCardholderPaymentTool)
+                .should.eventually.be.rejectedWith(AxiosError);
+        error.response.data.should.include({
             code: 'invalidRequest'
         });
     });
