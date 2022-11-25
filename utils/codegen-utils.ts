@@ -1,8 +1,10 @@
 import guid from './guid';
-import { capiEndpoint, payresEndpoint, privdocEndpoint, wapiEndpoint } from '../settings';
-import { handleResponseError } from './handle-response-error';
-
-import * as merge from  'lodash/merge';
+import {
+    fetch,
+    capiEndpoint,
+    payresEndpoint,
+    wapiEndpoint
+} from '../settings';
 
 const defaultOptions = {
     headers: {
@@ -16,16 +18,12 @@ export class APIDispatcher {
 
     constructor(endpoint: string, requestOptions: any = {}) {
         this.endpoint = endpoint;
-        let options = {};
-        merge(options, defaultOptions, requestOptions);
-        this.requestOptions = options;
+        this.requestOptions = Object.assign({}, defaultOptions, requestOptions);
     }
 
     callMethod<R = any>(fn: (...args: any[]) => Promise<R>, ...args: any[]): Promise<R> {
         const xRequestID = guid();
-        return fn
-            .apply(null, [xRequestID, ...args, this.requestOptions])(undefined, this.endpoint)
-            .catch(ex => handleResponseError(ex, xRequestID));
+        return fn.apply(null, [xRequestID, ...args, this.requestOptions])(fetch, this.endpoint);
     }
 }
 

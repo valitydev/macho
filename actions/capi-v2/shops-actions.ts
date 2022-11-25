@@ -27,7 +27,7 @@ export class ShopsActions {
         });
     }
 
-    getShopByID(shopID: string = 'TEST'): Promise<Shop> {
+    getShopByID(shopID: string): Promise<Shop> {
         return this.dispatcher.callMethod(this.api.getShopByID, shopID).then(shop => {
             shop.should.to.have.property('id').to.be.a('string');
             return shop;

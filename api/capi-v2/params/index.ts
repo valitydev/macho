@@ -8,6 +8,5 @@ export * from './payment-tools/sane-visa-payment-tool';
 export * from './payment-tools/insufficient-funds-visa-tool';
 export * from './payment-tools/secure-visa-payment-tool';
 export * from './payment-tools/secure-visa-empty-cvv-payment-tool';
-export * from './claim-params/test-shop-claim-params';
-export * from './claim-params/live-shop-claim-params';
+export * from './payment-tools/bad-cardholder-payment-tool';
 export * from './webhook/params';

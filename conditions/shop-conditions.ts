@@ -1,15 +1,17 @@
-import { ClaimsActions, PartiesActions, ShopsActions } from '../actions/capi-v2';
+import { AuthActions } from '../actions';
+import { PartiesActions, ShopsActions } from '../actions/capi-v2';
+import { ClaimsActions } from '../actions/claim-management-v1';
+import { AdminActions } from '../actions/claim-admin';
 import { Shop } from '../api/capi-v2/codegen';
 import guid from '../utils/guid';
-import { PapiClaimsActions } from '../actions/papi-v1';
-import { AuthActions } from '../actions';
+import until from '../utils/until';
 
 export class ShopConditions {
     private static instance: ShopConditions;
-    private claimsActions: ClaimsActions;
     private partiesActions: PartiesActions;
     private shopsActions: ShopsActions;
-    private papiClaimsActions: PapiClaimsActions;
+    private claimsActions: ClaimsActions;
+    private adminActions: AdminActions;
 
     static async getInstance(): Promise<ShopConditions> {
         if (this.instance) {
@@ -17,16 +19,15 @@ export class ShopConditions {
         }
         const authActions = AuthActions.getInstance();
         const exToken = await authActions.getExternalAccessToken();
-        const inToken = await authActions.getInternalAccessToken();
-        this.instance = new ShopConditions(exToken, inToken);
+        this.instance = new ShopConditions(exToken);
         return this.instance;
     }
 
-    constructor(externalToken: string, internalToken: string) {
-        this.claimsActions = new ClaimsActions(externalToken);
+    constructor(externalToken: string, internalToken?: string) {
         this.partiesActions = new PartiesActions(externalToken);
         this.shopsActions = new ShopsActions(externalToken);
-        this.papiClaimsActions = new PapiClaimsActions(internalToken);
+        this.claimsActions = new ClaimsActions(externalToken);
+        this.adminActions = new AdminActions();
     }
 
     async createShops(count: number): Promise<Shop[]> {
@@ -40,25 +41,31 @@ export class ShopConditions {
     async createShop(): Promise<Shop> {
         const party = await this.partiesActions.getActiveParty();
         const shopID = guid();
-        const claim = await this.claimsActions.createClaimForLiveShop(shopID);
-        await this.papiClaimsActions.acceptClaimByID(party.id, claim.id, 1);
+        const claim = await this.claimsActions.createShopClaim(party.id, shopID);
+        await until(() => this.claimsActions.getClaim(party.id, claim.id))
+            .satisfy(claim => {
+                if (claim.status !== 'accepted') {
+                    throw new Error(`Claim ${claim.id} status is ${claim.status}`);
+                }
+            });
+        await this.adminActions.acceptClaim(party.id, claim.id);
         return await this.shopsActions.getShopByID(shopID);
     }
 
     async createShopWithPayoutSchedule(scheduleID = 1): Promise<Shop> {
         const shop = await this.createShop();
-        const claim = await this.claimsActions.createClaimForLiveShopWithSchedule(
-            shop.id,
-            scheduleID
-        );
+        // const claim = await this.claimsActions.createClaimForLiveShopWithSchedule(
+        //     shop.id,
+        //     scheduleID
+        // );
         const party = await this.partiesActions.getActiveParty();
-        await this.papiClaimsActions.acceptClaimByID(party.id, claim.id, 1);
+        // await this.papiClaimsActions.acceptClaimByID(party.id, claim.id, 1);
         return shop;
     }
 
     async turnOffPayoutSchedule(shopID: string) {
-        const claim = await this.claimsActions.createClaimForLiveShopWithSchedule(shopID);
+        // const claim = await this.claimsActions.createClaimForLiveShopWithSchedule(shopID);
         const party = await this.partiesActions.getActiveParty();
-        await this.papiClaimsActions.acceptClaimByID(party.id, claim.id, 1);
+        // await this.papiClaimsActions.acceptClaimByID(party.id, claim.id, 1);
     }
 }

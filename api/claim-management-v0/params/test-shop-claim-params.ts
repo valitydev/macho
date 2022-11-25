@@ -1,25 +1,23 @@
-import guid from '../../../../utils/guid';
+import guid from '../../../utils/guid';
 import {
     contractCreationChange,
     contractPayoutToolCreationChange,
     contractLegalAgreementBindingChange,
     shopCreationChange,
-    shopCategoryChange,
     shopAccountCreationChange
 } from './default-claim-params';
-import { ClaimChangeset } from '../../codegen';
+import { Modification } from '../codegen';
 
-export function testShopClaimChangeset(id?: string): ClaimChangeset {
+export function testShopClaimChangeset(id?: string): Array<Modification> {
     const testShopID = id || guid();
     const testContractID = id || guid();
+    const testContractorID = id || guid();
     const testPayoutToolID = id || guid();
-
     return [
-        contractCreationChange(testContractID, 1),
+        contractCreationChange(testContractID, 1, testContractorID),
         contractPayoutToolCreationChange(testContractID, testPayoutToolID, 'RUB'),
         contractLegalAgreementBindingChange(testContractID),
-        shopCreationChange(testShopID, testContractID, testPayoutToolID),
-        shopCategoryChange(testShopID, 1),
+        shopCreationChange(testShopID, testContractID, testPayoutToolID, 1),
         shopAccountCreationChange(testShopID, 'RUB')
-    ] as ClaimChangeset;
+    ];
 }
