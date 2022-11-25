@@ -22,7 +22,7 @@ export class PartiesActions {
     constructor(accessToken: string) {
         this.dispatcher = new CAPIDispatcher({
             headers: {
-                origin: 'https://dashboard.rbk.money'
+                origin: 'https://dashboard.stage.empayre.com'
             }
         });
         this.api = PartiesApiFp({
@@ -31,13 +31,6 @@ export class PartiesActions {
     }
 
     getActiveParty(): Promise<Party> {
-        return this.dispatcher.callMethod(this.api.getMyParty).then(party => {
-            party.should.to.deep.include({
-                isBlocked: false,
-                isSuspended: false
-            });
-            party.should.to.have.property('id').to.be.a('string');
-            return party;
-        });
+        return this.dispatcher.callMethod(this.api.getMyParty);
     }
 }
