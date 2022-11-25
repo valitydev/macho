@@ -21,7 +21,7 @@
     "lodash": "^4.17.15",
     "memory-cache": "0.2.0",
     "mocha": "4.0.1",
-    "moment": "^2.24.0",
+    "moment": "^2.29.4",
     "pkg": "4.3.0-beta.5",
     "portable-fetch": "3.0.0",
     "request": "2.83.0",
