@@ -1,7 +1,4 @@
-import { ChangeIdentityCondition } from './wapi-v0/wallet/identities-event-actions';
 import {
-    IdentityChallengeEvent,
-    IdentityChallengeStatusChanged,
     WithdrawalEvent,
     WithdrawalStatus
 } from '../api/wapi-v0/wallet/codegen';
@@ -10,9 +7,9 @@ import { ChangeInvoiceCondition } from './capi-v2/invoice-event-actions';
 import { ChangeWithdrawalCondition } from './wapi-v0/wallet/withdrawals-event-actions';
 import delay from '../utils/delay';
 
-type ChangeCondition = ChangeIdentityCondition | ChangeInvoiceCondition | ChangeWithdrawalCondition;
-type EventStatusChanged = IdentityChallengeStatusChanged | InvoiceChange | WithdrawalStatus;
-type Event = IdentityChallengeEvent | InvoiceEvent | WithdrawalEvent;
+type ChangeCondition = ChangeInvoiceCondition | ChangeWithdrawalCondition;
+type EventStatusChanged = InvoiceChange | WithdrawalStatus;
+type Event = InvoiceEvent | WithdrawalEvent;
 
 export abstract class EventActions {
     protected api;
@@ -56,5 +53,5 @@ export abstract class EventActions {
         return result;
     }
 
-    abstract async getEvents(...args: any[]): Promise<Event[]>;
+    abstract getEvents(...args: any[]): Promise<Event[]>;
 }
