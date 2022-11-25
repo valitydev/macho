@@ -6,6 +6,17 @@ import {
     PaymentsActions,
     TokensActions
 } from '../../actions/capi-v2';
+import {
+    PaymentFlow,
+    PaymentFlowHold,
+    PaymentStatus,
+    saneVisaPaymentTool
+} from '../../api';
+
+import PaymentStatusT = PaymentStatus.StatusEnum;
+import FlowT = PaymentFlow.TypeEnum;
+import FlowHoldT = PaymentFlowHold.OnHoldExpirationEnum;
+import { AxiosError } from 'axios';
 
 describe('Hold payments', () => {
     let paymentsActions: PaymentsActions;
@@ -27,82 +38,100 @@ describe('Hold payments', () => {
     });
 
     it('Auto captured payment', async () => {
-        const invoiceAndToken = await invoiceActions.createSimpleInvoice(liveShopID);
-        const invoiceAccessToken = invoiceAndToken.invoiceAccessToken.payload;
-        const tokensActions = new TokensActions(invoiceAccessToken);
-        const paymentResource = await tokensActions.createSaneVisaPaymentResource();
+        const { invoice, invoiceAccessToken }  = await invoiceActions.createSimpleInvoice(liveShopID);
+        const tokensActions = new TokensActions(invoiceAccessToken.payload);
+        const paymentResource = await tokensActions.createPaymentResource(saneVisaPaymentTool);
         const payment = await paymentsActions.createHoldPayment(
-            invoiceAndToken.invoice.id,
-            paymentResource
+            invoice.id,
+            paymentResource,
+            FlowHoldT.Capture
         );
+        payment.should.have.property('id').to.be.a('string');
+        payment.should.have.property('invoiceID').equal(invoice.id);
+        payment.flow.should.include({
+            type: FlowT.PaymentFlowHold,
+            onHoldExpiration: FlowHoldT.Capture
+        } as PaymentFlowHold);
+        payment.flow.should.have.property('heldUntil').that.is.a('Date');
         await invoiceEventActions.waitConditions(
             [isPaymentCaptured(payment.id), isInvoicePaid()],
-            invoiceAndToken.invoice.id
+            invoice.id
         );
     });
 
     it('Manual captured payment', async () => {
         const amount = 1001;
-        const invoiceAndToken = await invoiceActions.createSimpleInvoice(liveShopID, amount);
-        const invoiceAccessToken = invoiceAndToken.invoiceAccessToken.payload;
-        const tokensActions = new TokensActions(invoiceAccessToken);
-        const paymentResource = await tokensActions.createSaneVisaPaymentResource();
+        const { invoice, invoiceAccessToken } = await invoiceActions.createSimpleInvoice(liveShopID, amount);
+        const tokensActions = new TokensActions(invoiceAccessToken.payload);
+        const paymentResource = await tokensActions.createPaymentResource(saneVisaPaymentTool);
         const payment = await paymentsActions.createHoldPayment(
-            invoiceAndToken.invoice.id,
+            invoice.id,
             paymentResource,
-            'cancel',
-            amount
+            FlowHoldT.Cancel
         );
+        payment.should.have.property('id').to.be.a('string');
+        payment.should.have.property('invoiceID').equal(invoice.id);
+        payment.should.have.property('amount').equal(amount);
+        payment.flow.should.include({
+            type: FlowT.PaymentFlowHold,
+            onHoldExpiration: FlowHoldT.Cancel
+        } as PaymentFlowHold);
         await invoiceEventActions.waitConditions(
             [isPaymentProcessed(payment.id)],
-            invoiceAndToken.invoice.id
+            invoice.id
         );
-        await paymentsActions.capturePayment(invoiceAndToken.invoice.id, payment.id);
+        await paymentsActions.capturePayment(invoice.id, payment.id);
         await invoiceEventActions.waitConditions(
             [isPaymentCaptured(payment.id), isInvoicePaid()],
-            invoiceAndToken.invoice.id
+            invoice.id
         );
+        const capturedPayment = await paymentsActions.getPaymentByID(invoice.id, payment.id);
+        capturedPayment.should.include({
+            status: PaymentStatusT.Captured
+        });
     });
 
     it('Manual partial captured payment', async () => {
-        const invoiceAndToken = await invoiceActions.createSimpleInvoice(liveShopID);
-        const invoiceAccessToken = invoiceAndToken.invoiceAccessToken.payload;
-        const tokensActions = new TokensActions(invoiceAccessToken);
-        const paymentResource = await tokensActions.createSaneVisaPaymentResource();
+        const { invoice, invoiceAccessToken } = await invoiceActions.createSimpleInvoice(liveShopID, 10000);
+        const tokensActions = new TokensActions(invoiceAccessToken.payload);
+        const paymentResource = await tokensActions.createPaymentResource(saneVisaPaymentTool);
         const payment = await paymentsActions.createHoldPayment(
-            invoiceAndToken.invoice.id,
+            invoice.id,
             paymentResource,
-            'cancel'
+            FlowHoldT.Cancel
         );
         await invoiceEventActions.waitConditions(
             [isPaymentProcessed(payment.id)],
-            invoiceAndToken.invoice.id
+            invoice.id
         );
-        await paymentsActions.capturePayment(invoiceAndToken.invoice.id, payment.id, 5000);
+        await paymentsActions.capturePayment(invoice.id, payment.id, 5000);
         await invoiceEventActions.waitConditions(
             [isPaymentCaptured(payment.id), isInvoicePaid()],
-            invoiceAndToken.invoice.id
+            invoice.id
         );
+        const capturedPayment = await paymentsActions.getPaymentByID(invoice.id, payment.id);
+        capturedPayment.should.include({
+            status: PaymentStatusT.Captured,
+            amount: 5000
+        });
     });
 
     it('Failed manual partial capture payment', async () => {
-        const invoiceAndToken = await invoiceActions.createSimpleInvoice(liveShopID);
-        const invoiceAccessToken = invoiceAndToken.invoiceAccessToken.payload;
-        const tokensActions = new TokensActions(invoiceAccessToken);
-        const paymentResource = await tokensActions.createSaneVisaPaymentResource();
+        const { invoice, invoiceAccessToken } = await invoiceActions.createSimpleInvoice(liveShopID);
+        const tokensActions = new TokensActions(invoiceAccessToken.payload);
+        const paymentResource = await tokensActions.createPaymentResource(saneVisaPaymentTool);
         const payment = await paymentsActions.createHoldPayment(
-            invoiceAndToken.invoice.id,
+            invoice.id,
             paymentResource,
-            'cancel'
+            FlowHoldT.Cancel
         );
         await invoiceEventActions.waitConditions(
             [isPaymentProcessed(payment.id)],
-            invoiceAndToken.invoice.id
+            invoice.id
         );
-        try {
-            await paymentsActions.capturePayment(invoiceAndToken.invoice.id, payment.id, 12000); // default amount = 10000
-        } catch (e) {
-            e.message.should.to.have.property('code').to.eq('amountExceededCaptureBalance');
-        }
+        const e: AxiosError =
+            await paymentsActions.capturePayment(invoice.id, payment.id, 12000) // default amount = 10000
+                .should.eventually.be.rejectedWith(AxiosError);
+        e.response.data.should.have.property('code').equal('amountExceededCaptureBalance');
     });
 });

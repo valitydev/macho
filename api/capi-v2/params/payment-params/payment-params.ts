@@ -1,9 +1,15 @@
-import { PaymentFlow, PaymentParams, CaptureParams, Payer } from '../../codegen';
+import {
+    PaymentFlow,
+    PaymentFlowHold,
+    PaymentParams,
+    CaptureParams,
+    Payer
+} from '../../codegen';
 import TypeEnum = PaymentFlow.TypeEnum;
 import { Payment } from '../../';
 import { assertPayer } from './payer-params';
 
-function getFlow(paymentType: TypeEnum, holdType?: string) {
+function getFlow(paymentType: TypeEnum, holdType?: PaymentFlowHold.OnHoldExpirationEnum) {
     switch (paymentType) {
         case TypeEnum.PaymentFlowHold:
             return {
@@ -22,7 +28,7 @@ export function paymentParams(
     payer: Payer,
     paymentType: TypeEnum,
     makeRecurrent: boolean,
-    holdType?: string,
+    holdType?: PaymentFlowHold.OnHoldExpirationEnum,
     externalID?: string,
     metadata?: object
 ): PaymentParams {
@@ -51,7 +57,7 @@ export function assertPayment(
     payment: Payment,
     amount: number,
     paymentType: TypeEnum,
-    holdType?: string,
+    holdType?: PaymentFlowHold.OnHoldExpirationEnum,
     metadata?: object
 ) {
     payment.should.to.include({

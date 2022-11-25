@@ -5,12 +5,12 @@ import {
     isPaymentCaptured
 } from '../actions/capi-v2/invoice-event-actions';
 import { AuthActions } from '../actions';
-import { InvoiceAndToken, PaymentResource } from '../api/capi-v2/codegen/api';
-
-export interface InstantPaymentProceedResult {
-    invoiceID: string;
-    paymentID: string;
-}
+import {
+    Invoice,
+    Payment,
+    PaymentResource
+} from '../api/capi-v2/codegen/api';
+import { saneVisaPaymentTool } from '../api';
 
 export class PaymentConditions {
     private invoiceActions: InvoicesActions;
@@ -27,7 +27,7 @@ export class PaymentConditions {
         return this.instance;
     }
 
-    private constructor(token: string) {
+    constructor(token: string) {
         this.invoiceActions = new InvoicesActions(token);
         this.paymentsActions = new PaymentsActions(token);
         this.invoiceEventActions = new InvoicesEventActions(token);
@@ -36,36 +36,29 @@ export class PaymentConditions {
     async proceedInstantPayment(
         shopID: string,
         amount: number = 10000
-    ): Promise<InstantPaymentProceedResult> {
-        const invoiceAndToken = await this.invoiceActions.createSimpleInvoice(shopID, amount);
-        const invoiceAccessToken = invoiceAndToken.invoiceAccessToken.payload;
-        const tokensActions = new TokensActions(invoiceAccessToken);
-        const paymentResource = await tokensActions.createSaneVisaPaymentResource();
-        return this.proceedInstantPaymentExtend(amount, paymentResource, invoiceAndToken);
+    ): Promise<Payment> {
+        const { invoice, invoiceAccessToken } = await this.invoiceActions.createSimpleInvoice(shopID, amount);
+        const tokensActions = new TokensActions(invoiceAccessToken.payload);
+        const paymentResource = await tokensActions.createPaymentResource(saneVisaPaymentTool);
+        return this.proceedInstantPaymentExtend(paymentResource, invoice);
     }
 
     async proceedInstantPaymentExtend(
-        amount: number,
         paymentResource: PaymentResource,
-        invoiceAndToken: InvoiceAndToken,
+        invoice: Invoice,
         externalID?: string,
         metadata?: object
-    ): Promise<InstantPaymentProceedResult> {
-        const invoiceID = invoiceAndToken.invoice.id;
-        const { id } = await this.paymentsActions.createInstantPayment(
-            invoiceID,
+    ): Promise<Payment> {
+        const payment = await this.paymentsActions.createInstantPayment(
+            invoice.id,
             paymentResource,
-            amount,
             externalID,
             metadata
         );
         await this.invoiceEventActions.waitConditions(
-            [isInvoicePaid(), isPaymentCaptured(id)],
-            invoiceID
+            [isInvoicePaid(), isPaymentCaptured(payment.id)],
+            invoice.id
         );
-        return {
-            invoiceID,
-            paymentID: id
-        };
+        return await this.paymentsActions.getPaymentByID(invoice.id, payment.id);
     }
 }

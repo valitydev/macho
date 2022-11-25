@@ -1,6 +1,8 @@
-import * as moment from 'moment';
+import moment from 'moment';
+import chai from 'chai';
+import chaiDateString from 'chai-date-string';
 import { ShopConditions, PaymentConditions } from '../../conditions';
-import { AnapiSearchActions, AuthActions } from '../../actions';
+import { AuthActions, AnapiSearchActions } from '../../actions';
 import {
     InvoicesActions,
     InvoicesEventActions,
@@ -13,14 +15,28 @@ import {
     PartiesActions
 } from '../../actions/capi-v2';
 import { provideInteract } from '../../utils/provide-interact';
-import { PaymentInteractionRequested } from '../../api/capi-v2';
-import delay from '../../utils/delay';
+import {
+    PaymentFlow,
+    PaymentStatus,
+    PaymentInteractionRequested,
+    saneVisaPaymentTool,
+    secureVisaPaymentTool,
+    secureEmptyCVVVisaPaymentTool,
+    insufficientFundsVisaTool,
+    PaymentResourcePayer
+} from '../../api/capi-v2';
 import guid from '../../utils/guid';
+import until from '../../utils/until';
+
+chai.should();
+chai.use(chaiDateString);
 
 describe('Instant payments', () => {
     let paymentsActions: PaymentsActions;
+    let paymentConditions: PaymentConditions;
     let invoiceActions: InvoicesActions;
     let invoiceEventActions: InvoicesEventActions;
+    let searchActions: AnapiSearchActions;
     let liveShopID: string;
     let partyID: string;
 
@@ -31,9 +47,11 @@ describe('Instant payments', () => {
             authActions.getExternalAccessToken(),
             shopConditions.createShop()
         ]);
+        paymentsActions = new PaymentsActions(externalAccessToken);
+        paymentConditions = new PaymentConditions(externalAccessToken);
         invoiceActions = new InvoicesActions(externalAccessToken);
         invoiceEventActions = new InvoicesEventActions(externalAccessToken);
-        paymentsActions = new PaymentsActions(externalAccessToken);
+        searchActions = new AnapiSearchActions(externalAccessToken);
         liveShopID = shop.id;
         const partiesActions = new PartiesActions(externalAccessToken);
         const party = await partiesActions.getActiveParty();
@@ -41,131 +59,135 @@ describe('Instant payments', () => {
     });
 
     describe('Sane payment and search', async () => {
-        let paymentID;
-        let invoiceID;
-        let paymentMetadata;
+        let paymentID: string;
+        let invoiceID: string;
+        let paymentMetadata: Record<string, any>;
 
         it('should create and proceed payment', async () => {
-            const paymentConditions = await PaymentConditions.getInstance();
             const amount = 1000;
             const metadata = { hey: 'there', im: [1, 3, 3, 7] };
-            const invoiceAndToken = await invoiceActions.createSimpleInvoice(liveShopID, amount);
-            invoiceID = invoiceAndToken.invoice.id;
-            const invoiceAccessToken = invoiceAndToken.invoiceAccessToken.payload;
-            const tokensActions = new TokensActions(invoiceAccessToken);
-            const paymentResource = await tokensActions.createSaneVisaPaymentResource();
-            const result = await paymentConditions.proceedInstantPaymentExtend(
-                amount,
+            const { invoice, invoiceAccessToken } = await invoiceActions.createSimpleInvoice(liveShopID, amount);
+            const tokensActions = new TokensActions(invoiceAccessToken.payload);
+            const paymentResource = await tokensActions.createPaymentResource(saneVisaPaymentTool);
+            const payment = await paymentConditions.proceedInstantPaymentExtend(
                 paymentResource,
-                invoiceAndToken,
+                invoice,
                 undefined,
                 metadata
             );
-            paymentID = result.paymentID;
+            payment.should.have.property('id').to.be.a('string');
+            payment.should.have.property('invoiceID').equal(invoice.id);
+            // @ts-ignore
+            payment.should.have.property('createdAt').to.be.a.dateString();
+            payment.should.have.property('status').equal(PaymentStatus.StatusEnum.Captured);
+            payment.should.have.property('amount').equal(amount);
+            payment.should.have.property('currency').equal('RUB');
+            payment.should.have.deep.property('metadata', metadata);
+            payment.flow.should.include({type: PaymentFlow.TypeEnum.PaymentFlowInstant});
+            payment.should.have.property('makeRecurrent').to.be.a('boolean');
+            payment.should.have.property('payer').to.be.an('object');
+            payment.payer.should.have.property('paymentToolDetails').to.be.an('object');
+            payment.payer.should.have.property('paymentToolDetails').that.includes({
+                detailsType: 'PaymentToolDetailsBankCard',
+                cardNumberMask: '424242******4242',
+                paymentSystem: 'VISA'
+            });
+            payment.payer.should.have.property('clientInfo').to.be.an('object');
+            payment.payer.should.deep.include({
+                contactInfo: { email: 'user@example.com' }
+            });
+            invoiceID = invoice.id;
+            paymentID = payment.id;
             paymentMetadata = metadata;
         });
 
-        async function pollAnapiSearchPayments() {
-            const searchActions = await AnapiSearchActions.getInstance();
-            let result = [];
-            while (result.length === 0) {
-                result = (await searchActions.searchPayments(
+        it('should find created payment', async () => {
+            const { result } =
+                await until(() => searchActions.searchPayments({
                     partyID,
-                    moment().subtract(1, 'minutes'),
-                    moment(),
-                    10,
-                    liveShopID,
-                    undefined,
-                    undefined,
-                    undefined,
-                    undefined,
+                    fromTime: moment().subtract(1, 'minutes'),
+                    toTime: moment(),
+                    limit: 10,
+                    paymentInstitutionRealm: 'test',
+                    shopID: liveShopID,
                     invoiceID,
                     paymentID
-                )).result;
-                await delay(500);
-            }
-            return result;
-        }
-
-        it('should search payments in anapi', async () => {
-            const result = await Promise.race([delay(10000), pollAnapiSearchPayments()]);
-            if (!result) {
-                throw new Error('Wait searchPayments result timeout');
-            }
+                }))
+                    .satisfy(search => {
+                        if (search.result.length < 1) {
+                            throw new Error('Search returned 0 payments');
+                        }
+                    });
             result.length.should.eq(1);
             result[0].id.should.eq(paymentID);
             result[0].invoiceID.should.eq(invoiceID);
             result[0].metadata.should.eql(paymentMetadata);
         });
+
     });
 
-    it('Create idempotent successful', async () => {
-        const paymentConditions = await PaymentConditions.getInstance();
+    it('should create payment idempotently', async () => {
         const amount = 1000;
         let promises = [];
         let tries = 10;
         const externalID = guid();
-        const invoiceAndToken = await invoiceActions.createSimpleInvoice(liveShopID, amount);
-        const invoiceID = invoiceAndToken.invoice.id;
-        const invoiceAccessToken = invoiceAndToken.invoiceAccessToken.payload;
-        const tokensActions = new TokensActions(invoiceAccessToken);
-        const paymentResource = await tokensActions.createSaneVisaPaymentResource();
+        const { invoice, invoiceAccessToken } = await invoiceActions.createSimpleInvoice(liveShopID, amount);
+        const tokensActions = new TokensActions(invoiceAccessToken.payload);
+        const paymentResource = await tokensActions.createPaymentResource(saneVisaPaymentTool);
         while (tries > 0) {
-            let promise = paymentConditions.proceedInstantPaymentExtend(
-                amount,
+            const promise = paymentsActions.createInstantPayment(
+                invoice.id,
                 paymentResource,
-                invoiceAndToken,
                 externalID
             );
             promises.push(promise);
             tries--;
         }
         const payments = await Promise.all(promises);
-        const paymentID = payments[0].paymentID;
-
+        const paymentID = payments[0].id;
         for (let payment of payments) {
-            invoiceID.should.eq(payment.invoiceID);
-            paymentID.should.eq(payment.paymentID);
+            invoice.id.should.eq(payment.invoiceID);
+            paymentID.should.eq(payment.id);
         }
     });
 
-    it('Create and proceed payment 3DS', async () => {
-        const invoiceAndToken = await invoiceActions.createSimpleInvoice(liveShopID);
-        const invoiceID = invoiceAndToken.invoice.id;
-        const invoiceAccessToken = invoiceAndToken.invoiceAccessToken.payload;
-        const tokensActions = new TokensActions(invoiceAccessToken);
-        const paymentResource = await tokensActions.createSecureVisaPaymentResource();
-        const payment = await paymentsActions.createInstantPayment(invoiceID, paymentResource);
-        const change = await invoiceEventActions.waitConditions([isInvoiceInteracted()], invoiceID);
-        await provideInteract(change[0] as PaymentInteractionRequested);
+    it('should create and proceed payment with 3DS', async () => {
+        const { invoice, invoiceAccessToken } = await invoiceActions.createSimpleInvoice(liveShopID);
+        const tokensActions = new TokensActions(invoiceAccessToken.payload);
+        const paymentResource = await tokensActions.createPaymentResource(secureVisaPaymentTool);
+        const payment = await paymentsActions.createInstantPayment(invoice.id, paymentResource);
+        const change = await invoiceEventActions.waitConditions([isInvoiceInteracted()], invoice.id);
+        payment.should.have.property('id').to.be.a('string');
+        payment.should.have.property('invoiceID').equal(invoice.id);
+        payment.should.have.property('status').equal(PaymentStatus.StatusEnum.Pending);
+    await provideInteract(change[0] as PaymentInteractionRequested);
         await invoiceEventActions.waitConditions(
             [isInvoicePaid(), isPaymentCaptured(payment.id)],
-            invoiceID
+            invoice.id
         );
     });
 
-    it('Create and proceed payment 3DS with empty cvv', async () => {
-        const invoiceAndToken = await invoiceActions.createSimpleInvoice(liveShopID);
-        const invoiceID = invoiceAndToken.invoice.id;
-        const invoiceAccessToken = invoiceAndToken.invoiceAccessToken.payload;
-        const tokensActions = new TokensActions(invoiceAccessToken);
-        const paymentResource = await tokensActions.createSecureEmptyCVVVisaPaymentResource();
-        const payment = await paymentsActions.createInstantPayment(invoiceID, paymentResource);
-        const change = await invoiceEventActions.waitConditions([isInvoiceInteracted()], invoiceID);
+    it('should create and proceed payment with 3DS + empty cvv', async () => {
+        const { invoice, invoiceAccessToken } = await invoiceActions.createSimpleInvoice(liveShopID);
+        const tokensActions = new TokensActions(invoiceAccessToken.payload);
+        const paymentResource = await tokensActions.createPaymentResource(secureEmptyCVVVisaPaymentTool);
+        const payment = await paymentsActions.createInstantPayment(invoice.id, paymentResource);
+        const change = await invoiceEventActions.waitConditions([isInvoiceInteracted()], invoice.id);
+        payment.should.have.property('id').to.be.a('string');
+        payment.should.have.property('invoiceID').equal(invoice.id);
+        payment.should.have.property('status').equal(PaymentStatus.StatusEnum.Pending);
         await provideInteract(change[0] as PaymentInteractionRequested);
         await invoiceEventActions.waitConditions(
             [isInvoicePaid(), isPaymentCaptured(payment.id)],
-            invoiceID
+            invoice.id
         );
     });
 
-    it('Failed with invalid card', async () => {
-        const invoiceAndToken = await invoiceActions.createSimpleInvoice(liveShopID);
-        const invoiceID = invoiceAndToken.invoice.id;
-        const invoiceAccessToken = invoiceAndToken.invoiceAccessToken.payload;
-        const tokensActions = new TokensActions(invoiceAccessToken);
-        const paymentResource = await tokensActions.createInsufficientFundsVisaPaymentResource();
-        const payment = await paymentsActions.createInstantPayment(invoiceID, paymentResource);
-        await invoiceEventActions.waitConditions([isPaymentFailed(payment.id)], invoiceID);
+    it('payment with invalid card should fail', async () => {
+        const { invoice, invoiceAccessToken } = await invoiceActions.createSimpleInvoice(liveShopID);
+        const tokensActions = new TokensActions(invoiceAccessToken.payload);
+        const paymentResource = await tokensActions.createPaymentResource(insufficientFundsVisaTool);
+        const payment = await paymentsActions.createInstantPayment(invoice.id, paymentResource);
+        await invoiceEventActions.waitConditions([isPaymentFailed(payment.id)], invoice.id);
     });
 });
