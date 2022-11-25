@@ -19,29 +19,28 @@ TESTS_ARGS = \
 	--admin-endpoint $(TT_ADMIN_ENDPOINT) \
 	--proxy-endpoint $(TT_PROXY_ENDPOINT)
 
-SWAG_V2                   = ../../schemes/swag/v2/swagger.json
-SWAG_ANALYTICS            = ../../schemes/swag-analytics/swagger.json
-SWAG_BINBASE              = ../../schemes/swag-binbase/swagger.json
-SWAG_URL_SHORTENER_V1     = ../../schemes/swag-url-shortener/v1/swagger.json
-SWAG_WAPI_PAYRES_V0       = ../../schemes/swag-wallets/v0/api/payres/swagger.json
-SWAG_WAPI_PRIVDOC_V0      = ../../schemes/swag-wallets/v0/api/privdoc/swagger.json
-SWAG_WAPI_WALLET_V0       = ../../schemes/swag-wallets/v0/api/wallet/swagger.json
+SWAG_PAYMENTS             = ./schemas/swag-payments/swagger.json
+# SWAG_BINBASE              = ./schemas/swag-binbase/swagger.json
+SWAG_URL_SHORTENER_V1     = ./schemas/swag-url-shortener/swagger.json
+SWAG_WAPI_PAYRES_V0       = ./schemas/swag-wallets/api/payres/swagger.json
+SWAG_WAPI_WALLET_V0       = ./schemas/swag-wallets/api/wallet/swagger.json
+SWAG_CLAIM_MGMT_V1        = ./schemas/swag-claim-management/swagger.json
+SWAG_ANAPI_V2             = ./schemas/swag-anapi-v2/openapi.json
 
-GEN_SWAG_V2               = ./api/capi-v2/codegen
-GEN_SWAG_ANAL             = ./api/anapi/codegen
-GEN_SWAG_BINBASE          = ./api/binapi/codegen
+GEN_SWAG_PAYMENTS         = ./api/capi-v2/codegen
+# GEN_SWAG_BINBASE          = ./api/binapi/codegen
 GEN_SWAG_URL_SHORTENER_V1 = ./api/url-shortener-v1/codegen
 GEN_SWAG_WAPI_PAYRES_V0   = ./api/wapi-v0/payres/codegen
-GEN_SWAG_WAPI_PRIVDOC_V0  = ./api/wapi-v0/privdoc/codegen
 GEN_SWAG_WAPI_WALLET_V0   = ./api/wapi-v0/wallet/codegen
+GEN_SWAG_CLAIM_MGMT_V1    = ./api/claim-management-v0/codegen
+GEN_SWAG_ANAPI_V2         = ./api/anapi-v2/codegen
 GEN_SWAG = \
-	$(GEN_SWAG_V2) \
-	$(GEN_SWAG_ANAL) \
-	$(GEN_SWAG_BINBASE) \
+	$(GEN_SWAG_PAYMENTS) \
 	$(GEN_SWAG_URL_SHORTENER_V1) \
 	$(GEN_SWAG_WAPI_PAYRES_V0) \
-	$(GEN_SWAG_WAPI_PRIVDOC_V0) \
-	$(GEN_SWAG_WAPI_WALLET_V0)
+	$(GEN_SWAG_WAPI_WALLET_V0) \
+	$(GEN_SWAG_CLAIM_MGMT_V1) \
+	$(GEN_SWAG_ANAPI_V2)
 
 .PHONY: mocha-tests mocha-tests.tar.gz distclean
 
@@ -52,12 +51,14 @@ mocha-tests.tar.gz: mocha-tests
 # XXX not installing pkg globally to avoid issues with permissions and bin path
 mocha-tests: $(TSC) $(PKG) $(GEN_SWAG)
 	$(TSC)
-	$(PKG) -t node8-linux-x64 mocha-tests.js -o $@
+	$(PKG) -t node16-linux-x64 mocha-tests.js -o $@
 
-$(GEN_SWAG_V2): $(SWAG_V2)
-	$(call swagger-codegen,$<,$@)
+gen: $(GEN_SWAG)
 
-$(GEN_SWAG_ANAL): $(SWAG_ANALYTICS)
+compile:
+	$(TSC)
+
+$(GEN_SWAG_PAYMENTS): $(SWAG_PAYMENTS)
 	$(call swagger-codegen,$<,$@)
 
 $(GEN_SWAG_BINBASE): $(SWAG_BINBASE)
@@ -69,11 +70,14 @@ $(GEN_SWAG_URL_SHORTENER_V1): $(SWAG_URL_SHORTENER_V1)
 $(GEN_SWAG_WAPI_PAYRES_V0): $(SWAG_WAPI_PAYRES_V0)
 	$(call swagger-codegen,$<,$@)
 
-$(GEN_SWAG_WAPI_PRIVDOC_V0): $(SWAG_WAPI_PRIVDOC_V0)
-	$(call swagger-codegen,$<,$@)
-
 $(GEN_SWAG_WAPI_WALLET_V0): $(SWAG_WAPI_WALLET_V0)
 	$(call swagger-codegen,$<,$@)
+
+$(GEN_SWAG_CLAIM_MGMT_V1): $(SWAG_CLAIM_MGMT_V1)
+	$(call swagger-codegen,$<,$@)
+
+$(GEN_SWAG_ANAPI_V2): $(SWAG_ANAPI_V2)
+	$(call openapi-codegen,$<,$@)
 
 $(TSC):
 	$(NPM) i
@@ -86,7 +90,7 @@ distclean:
 
 # tests
 
-.PHONY: test test.suite test.transaction
+.PHONY: gen test test.suite test.transaction
 
 test: test.suite test.transaction
 
@@ -110,11 +114,23 @@ SWAGGER_CODEGEN = swagger-codegen-cli-2.3.1.jar
 SWAGGER_CODEGEN_PREFIX = https://oss.sonatype.org/content/repositories/releases
 SWAGGER_CODEGEN_URL := $(SWAGGER_CODEGEN_PREFIX)/io/swagger/swagger-codegen-cli/2.3.1/$(SWAGGER_CODEGEN)
 
+SWAGGER_CODEGEN_V3 = swagger-codegen-cli-3.0.35.jar
+SWAGGER_CODEGEN_V3_URL := $(SWAGGER_CODEGEN_PREFIX)/io/swagger/codegen/v3/swagger-codegen-cli/3.0.35/$(SWAGGER_CODEGEN_V3)
+
 define swagger-codegen
 	$(MAKE) $(SWAGGER_CODEGEN)
 	java -jar $(SWAGGER_CODEGEN) generate -l typescript-fetch -i $(1) -o $(2)
 	touch $(2)
 endef
 
+define openapi-codegen
+	$(MAKE) $(SWAGGER_CODEGEN_V3)
+	java -jar $(SWAGGER_CODEGEN_V3) generate -l typescript-fetch -i $(1) -o $(2)
+	touch $(2)
+endef
+
 $(SWAGGER_CODEGEN):
 	wget $(SWAGGER_CODEGEN_URL)
+
+$(SWAGGER_CODEGEN_V3):
+	wget $(SWAGGER_CODEGEN_V3_URL)

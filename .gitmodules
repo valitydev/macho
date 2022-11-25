@@ -1,0 +1,22 @@
+[submodule "schemas/swag-payments"]
+	path = schemas/swag-payments
+	url = https://github.com/valitydev/swag-payments
+	branch = release/v2
+[submodule "schemas/swag-wallets"]
+	path = schemas/swag-wallets
+	url = https://github.com/valitydev/swag-wallets
+	branch = release/v0
+[submodule "schemas/swag-url-shortener"]
+	path = schemas/swag-url-shortener
+	url = https://github.com/valitydev/swag-url-shortener
+	branch = release/master
+[submodule "schemas/swag-claim-management"]
+	path = schemas/swag-claim-management
+	url = https://github.com/valitydev/swag-claim-management
+	branch = release/master
+[submodule "schemas/damsel"]
+	path = schemas/damsel
+	url = https://github.com/valitydev/damsel
+[submodule "schemas/swag-anapi-v2"]
+	path = schemas/swag-anapi-v2
+	url = https://github.com/valitydev/swag-anapi-v2
