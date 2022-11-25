@@ -92,7 +92,7 @@ distclean:
 
 .PHONY: gen test test.suite test.transaction
 
-test: test.suite test.transaction
+test: test.suite
 
 test.suite: mocha-tests
 	./mocha-tests $(TESTS_ARGS)

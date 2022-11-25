@@ -1,9 +1,9 @@
+import chai from 'chai';
 import { PaymentConditions, RefundConditions, ShopConditions } from '../../conditions';
 import delay from '../../utils/delay';
 import { WebhooksActions } from '../../actions/capi-v2/webhooks-actions';
 import { InvoicesTopic } from '../../api/capi-v2/codegen';
 import { refundParams } from '../../api/capi-v2/params';
-import * as chai from 'chai';
 
 interface Invoice {
     id: string;
@@ -32,7 +32,8 @@ describe('Hooks', () => {
     let refundConditions: RefundConditions;
     let webhooksActions: WebhooksActions;
     let liveShopID: string;
-    let liveInvoiceID, livePaymentID: string;
+    let liveInvoiceID: string;
+    let livePaymentID: string;
 
     before(async () => {
         const shopConditions = await ShopConditions.getInstance();
@@ -67,13 +68,10 @@ describe('Hooks', () => {
 
         it('Should create and send webhook on full cycle of payment', async () => {
             const amount = 10000;
-            const { invoiceID, paymentID } = await paymentCondition.proceedInstantPayment(
-                liveShopID,
-                amount
-            );
-            await refundConditions.provideRefund(invoiceID, paymentID, refundParams(8000));
-            liveInvoiceID = invoiceID;
-            livePaymentID = paymentID;
+            const payment = await paymentCondition.proceedInstantPayment(liveShopID, amount);
+            await refundConditions.proceedRefund(payment, refundParams(8000));
+            liveInvoiceID = payment.invoiceID;
+            livePaymentID = payment.id;
         });
 
         it('Should have hooks', async () => {

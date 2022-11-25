@@ -1,5 +1,6 @@
-import moment from 'moment';
+import chai from 'chai';
 import chaiAsPromised from 'chai-as-promised';
+import moment from 'moment';
 import {
     InvoicesEventActions,
     isPaymentRefunded,

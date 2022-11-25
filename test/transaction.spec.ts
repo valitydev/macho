@@ -2,7 +2,7 @@ import * as yargs from 'yargs';
 import { Statuses, TransactionReporter } from '../utils/transaction-reporter';
 import { measure } from '../utils';
 import {
-    ClaimsActions,
+    // ClaimsActions,
     InvoicesActions,
     InvoicesEventActions,
     isInvoicePaid,
@@ -11,6 +11,7 @@ import {
     TokensActions
 } from '../actions/capi-v2';
 import { AuthActions } from '../actions';
+import { saneVisaPaymentTool } from '../api';
 
 describe('Test transaction', () => {
     const reporter = new TransactionReporter({
@@ -38,8 +39,8 @@ describe('Test transaction', () => {
                 if (e.status === 404 && createTestShop) {
                     // shop not found, but we want to create it
                     // looks _uebansky_, but I don't care
-                    const claimsActions = new ClaimsActions(accessToken);
-                    await claimsActions.createClaimForTestShop(testShopID);
+                    // const claimsActions = new ClaimsActions(accessToken);
+                    // await claimsActions.createClaimForTestShop(testShopID);
                 } else {
                     reporter.report(Statuses.failed);
                     throw e;
@@ -60,7 +61,7 @@ describe('Test transaction', () => {
         const invoiceAccessToken = invoice.result.invoiceAccessToken.payload;
         const tokensActions = new TokensActions(invoiceAccessToken);
         const paymentRes = await measure(
-            tokensActions.createSaneVisaPaymentResource,
+            () => tokensActions.createPaymentResource(saneVisaPaymentTool),
             tokensActions
         );
         try {

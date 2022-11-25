@@ -28,7 +28,7 @@ export class WebhooksActions {
     }
 
     async createWebhook(
-        shopID: string = 'TEST',
+        shopID: string,
         testId: string,
         eventTypes: Array<InvoicesTopic.EventTypesEnum>
     ): Promise<Webhook> {
