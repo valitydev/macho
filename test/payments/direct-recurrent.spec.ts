@@ -76,7 +76,6 @@ describe('Direct recurrent payments', () => {
         payer2.should.have.property('recurrentParentPayment').to.be.an('object');
         payer2.recurrentParentPayment.should.have.property('invoiceID').equal(invoice1.id);
         payer2.recurrentParentPayment.should.have.property('paymentID').equal(payment1.id);
-        payer2.should.have.property('paymentToolToken').to.be.a('string');
         payer2.should.have.property('paymentToolDetails')
             .that.includes({
                 detailsType: 'PaymentToolDetailsBankCard',
