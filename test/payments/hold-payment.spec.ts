@@ -1,3 +1,6 @@
+import chai from 'chai';
+import chaiAsPromised from 'chai-as-promised';
+import chaiDateString from 'chai-date-string';
 import { ShopConditions } from '../../conditions/shop-conditions';
 import { AuthActions, isInvoicePaid, isPaymentCaptured, isPaymentProcessed } from '../../actions';
 import {
@@ -12,6 +15,10 @@ import {
     PaymentStatus,
     saneVisaPaymentTool
 } from '../../api';
+
+chai.should();
+chai.use(chaiAsPromised);
+chai.use(chaiDateString);
 
 import PaymentStatusT = PaymentStatus.StatusEnum;
 import FlowT = PaymentFlow.TypeEnum;
@@ -52,7 +59,8 @@ describe('Hold payments', () => {
             type: FlowT.PaymentFlowHold,
             onHoldExpiration: FlowHoldT.Capture
         } as PaymentFlowHold);
-        payment.flow.should.have.property('heldUntil').that.is.a('Date');
+        // @ts-ignore
+        payment.flow.should.have.property('heldUntil').that.is.a.dateString();
         await invoiceEventActions.waitConditions(
             [isPaymentCaptured(payment.id), isInvoicePaid()],
             invoice.id
