@@ -18,43 +18,33 @@ export class IdentitiesActions {
 
     async createIdentity() {
         const simpleIdentity = getSimpleIdentityParams();
-        const createdIdentity = await this.dispatcher.callMethod(
+        return this.dispatcher.callMethod(
             this.api.createIdentity,
             simpleIdentity,
             undefined
         );
-        createdIdentity.should.contain.keys('class', 'name', 'provider');
-        return createdIdentity;
     }
 
     async getIdentity(identityID: string) {
-        const identity = await this.dispatcher.callMethod(
+        return this.dispatcher.callMethod(
             this.api.getIdentity,
             identityID,
             undefined
         );
-        identity.should.contain.keys('name', 'provider', 'class');
-        return identity;
     }
 
     async listIdentities(
         limit: number,
         providerID?: string,
-        classID?: string,
-        levelID?: string,
         continuationToken?: string
     ) {
-        const identities = await this.dispatcher.callMethod(
+        return this.dispatcher.callMethod(
             this.api.listIdentities,
+            undefined,
             limit,
             providerID,
-            classID,
-            levelID,
-            continuationToken,
-            undefined
+            continuationToken
         );
-        identities.should.contain.keys('result');
-        return identities;
     }
 
 }
