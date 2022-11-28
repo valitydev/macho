@@ -1,5 +1,73 @@
 # Тесты на Mocha
 
+## ⚠️ Work in progress ⚠️
+
+Репозиторий с тестами на данный момент в полурабочем состоянии. Большая часть тестов работоспособна при наличии достаточно полной и корректной конфигурации domain config, чего на staging сейчас **нет**. Наборы тестов рассчитаны на эфемерную среду, и (концептуально) конфигурация domain config − это их ответственность. Однако staging сейчас − это не эфемерная среда, и это надо учитывать.
+
+Наборы тестов:
+
+* ❌ `claims.spec.ts`
+
+    Требует адаптации к API отдельного сервиса, который пришёл на смену claim management в capi-v2. Сам [API и кодогенерация](Makefile#L74-L75) завезена, и существующие actions к нему уже адаптированы.
+
+* ✴️ `hooks/receive-hook.spec.ts`
+
+    Использует неактуальный webhook receiver для полного цикла. Вообще нужно бы найти какую-то замену, на первый взгляд достаточно минимальной обёртки вокруг key-value storage, которая будет представлять собой абстракцию _очередь из полученных HTTP-запросов_.
+
+* ✅ `invoice-management.spec.ts`
+
+* ✅ `invoice-template-management.spec.ts`
+
+* ✅ `parties.spec.ts`
+
+* ❌ `payments/crypto.spec.ts`
+
+    Кажется он никогда не работал. Есть ощущение, что вместе с `qiwi.spec.ts` надо засунуть в набор тестов, которые проверяют корректную обработку различных платёжных методов.
+
+* ✅ `payments/direct-recurrent.spec.ts`
+
+* ✴️ `payments/hold-payment.spec.ts`
+
+    Валится один тесткейс из-за неполной конфигурации в domain config: платёж не успевает автоматически перейти в статус captured, потому что в конфиге слишком большой hold lifetime.
+
+* ✴️ `payments/instant-payment.spec.ts`
+
+    Валятся часть тесткейсов из-за неполной конфигурации в domain config.
+
+* ✴️ `payments/payment-resource.spec.ts`
+
+    Валится один тесткейс из-за неполной конфигурации в domain config.
+
+* ❌ `payments/qiwi.spec.ts`
+
+    Тесткейсы валятся из-за неполной конфигурации в domain config.
+
+* ✅ `payments/refund.spec.ts`
+
+* ❌ `payouts.spec.ts`
+
+    Требует адаптации к актуальным API.
+
+* ✅ `short-urls.spec.ts`
+
+* ✅ `transaction.spec.ts`
+
+* ❌ `wallet-payout.spec.ts`
+
+    Требует адаптации к актуальным API (?).
+
+* ✅ `wallets/identities.spec.ts`
+
+* ✴️ `wallets/providers.spec.ts`
+
+    Тесткейсы валятся из-за неполной конфигурации в domain config.
+
+* ✅ `wallets/wallets.spec.ts`
+
+* ✴️ `wallets/withdrawal.spec.ts`
+
+    Большая часть тесткейсов валится из-за неполной конфигурации в domain config.
+
 ## Запуск
 
 Весь набор тестов:
