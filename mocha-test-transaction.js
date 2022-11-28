@@ -1,7 +1,7 @@
 const path = require('path');
 const settings = require('./build/settings');
 
-const mocha = settings.setup(process.argv);
+const { mocha } = settings.setup(process.argv);
 
 const testTransactionFile = 'transaction.spec.js';
 

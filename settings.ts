@@ -106,7 +106,7 @@ const enrichAxiosError = (error: AxiosError): void => {
     }
 }
 
-export const setup = (argv: string[]): Mocha => {
+export const setup = (argv: string[]): { mocha: Mocha, args: Record<string, any> } => {
 
     const args = yargs(hideBin(argv))
         .usage('Usage: $0 [options]')
@@ -212,13 +212,6 @@ export const setup = (argv: string[]): Mocha => {
         slow: args['slow']
     });
     
-    if (args['file']) {
-        mocha.addFile(path.resolve(args['file']));
-    } else {
-        glob.sync('**/*.js', { cwd: testDir })
-            .forEach(file => mocha.addFile(path.resolve(testDir, file)));
-    }
-
-    return mocha;
+    return { args, mocha };
 
 };
