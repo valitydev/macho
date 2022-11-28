@@ -1,5 +1,6 @@
 import chai from 'chai';
 import chaiAsPromised from 'chai-as-promised';
+import chaiDateString from 'chai-date-string';
 import moment from 'moment';
 import {
     InvoicesEventActions,
@@ -17,6 +18,7 @@ import { AxiosError } from 'axios';
 
 chai.should();
 chai.use(chaiAsPromised);
+chai.use(chaiDateString);
 
 describe('Refunds', () => {
     let shopID: string;
@@ -52,7 +54,8 @@ describe('Refunds', () => {
             payment = await paymentCondition.proceedInstantPayment(shopID);
             refund = await refundConditions.proceedRefund(payment, refundParams(10000));
             refund.should.have.property('id').to.be.a('string');
-            refund.should.have.property('createdAt').to.be.a('Date');
+            // @ts-ignore
+            refund.should.have.property('createdAt').to.be.a.dateString();
             refund.should.have.property('amount').equal(10000);
             refund.should.have.property('currency').equal('RUB');
             refund.should.have.property('reason').to.be.a('string');

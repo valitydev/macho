@@ -100,6 +100,15 @@ export class PaymentsActions {
             .callMethod(this.api.capturePayment, invoiceID, paymentID, params);
     }
 
+    getRefundByID(
+        invoiceID: string,
+        paymentID: string,
+        refundID: string
+    ): Promise<Refund> {
+        return this.dispatcher
+            .callMethod(this.api.getRefundByID, invoiceID, paymentID, refundID);
+    }
+
     async searchPayments(shopID: string, paymentID?: string) {
         return await this.dispatcher.callMethod(
             this.searchApi.searchPayments,

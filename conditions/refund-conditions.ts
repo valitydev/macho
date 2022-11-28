@@ -31,7 +31,7 @@ export class RefundConditions {
             [isRefundSucceeded(payment.id, refund.id)],
             payment.invoiceID
         );
-        return refund;
+        return this.paymentsActions.getRefundByID(payment.invoiceID, payment.id, refund.id);
     }
 
 }
