@@ -1,6 +1,7 @@
 import { WalletsActions } from '../../actions/wapi-v0/wallet';
 import { AuthActions } from '../../actions';
 import { IdentitiesActions } from '../../actions/wapi-v0';
+import until from '../../utils/until';
 
 describe('Wallets', () => {
     let walletsActions: WalletsActions;
@@ -20,7 +21,10 @@ describe('Wallets', () => {
         });
 
         it('should create new wallet', async () => {
-            await walletsActions.createNewWallet(identityID);
+            const wallet = await walletsActions.createNewWallet(identityID);
+            wallet.should.have.property('id').that.is.a('string');
+            wallet.should.have.property('identity').equal(identityID);
+            wallet.should.contain.keys('name', 'currency');
         });
     });
 
@@ -34,23 +38,33 @@ describe('Wallets', () => {
         });
 
         it('should get wallet', async () => {
-            await walletsActions.getWallet(walletID);
+            const wallet = await walletsActions.getWallet(walletID);
+            wallet.should.have.property('id').equal(walletID);
+            wallet.should.have.property('identity').equal(identityID);
+            wallet.should.contain.keys('name', 'currency');
         });
 
-        it('get list wallets', async () => {
-            await walletsActions.listWallets();
+        it('list wallets', async () => {
+            const list = await walletsActions.listWallets();
+            list.should.have.property('result');
+            list.result.should.have.property('length').that.is.a('number');
         });
 
-        it("get list identity's wallets", async () => {
-            await walletsActions.listWallets(identityID);
+        it("list identity's wallets", async () => {
+            const list = await walletsActions.pollListWallets(identityID);
+            list.should.have.property('result');
+            list.result.should.have.property('length').greaterThan(0);
+            list.result[0].should.have.property('identity').equal(identityID);
         });
 
         it('should get wallet account', async () => {
-            await walletsActions.getWalletAccount(walletID);
+            const walletAccount = await await walletsActions.getWalletAccount(walletID);
+            walletAccount.should.contain.keys('available', 'own');
         });
 
         it('should create new issue wallet grant', async () => {
-            await walletsActions.issueWalletGrant(walletID);
+            const grant = await walletsActions.issueWalletGrant(walletID);
+            grant.should.contain.keys('token', 'validUntil', 'asset');
         });
     });
 });
