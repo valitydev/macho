@@ -1,7 +1,10 @@
+import chai from 'chai';
 import { WalletsActions } from '../../actions/wapi-v0/wallet';
 import { AuthActions } from '../../actions';
 import { IdentitiesActions } from '../../actions/wapi-v0';
 import until from '../../utils/until';
+
+chai.should();
 
 describe('Wallets', () => {
     let walletsActions: WalletsActions;

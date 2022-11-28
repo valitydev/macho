@@ -1,11 +1,8 @@
-import * as chai from 'chai';
 import { Wallet, WalletsApiFp } from '../../../api/wapi-v0/wallet/codegen';
 import { WAPIDispatcher } from '../../../utils/codegen-utils';
 import { getSimpleWalletParams } from '../../../api/wapi-v0/wallet/params/wallets-params/simple-wallet-params';
 import { getWalletGrantParams } from '../../../api/wapi-v0/wallet/params/wallets-params/grant-params';
 import until from '../../../utils/until';
-
-chai.should();
 
 export class WalletsActions {
     private api;

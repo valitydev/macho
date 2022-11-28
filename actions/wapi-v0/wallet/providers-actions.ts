@@ -1,12 +1,9 @@
-import * as chai from 'chai';
 import {
     CurrenciesApiFp,
     ProvidersApiFp,
     ResidencesApiFp
 } from '../../../api/wapi-v0/wallet/codegen';
 import { WAPIDispatcher } from '../../../utils/codegen-utils';
-
-chai.should();
 
 export class ProvidersActions {
     private api;

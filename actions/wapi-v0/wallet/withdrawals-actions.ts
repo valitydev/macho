@@ -1,4 +1,3 @@
-import * as chai from 'chai';
 import {
     Destination,
     WithdrawalParameters,
@@ -7,8 +6,6 @@ import {
 import { WAPIDispatcher } from '../../../utils/codegen-utils';
 import { getWithdrawalGrantParams } from '../../../api/wapi-v0/wallet/params/wallets-params/grant-params';
 import delay from '../../../utils/delay';
-
-chai.should();
 
 export class WithdrawalsActions {
     private api;
@@ -27,7 +24,7 @@ export class WithdrawalsActions {
         currencyID?: string,
         continuationToken?: string
     ) {
-        const destination = await this.dispatcher.callMethod(
+        return this.dispatcher.callMethod(
             this.api.listDestinations,
             limit,
             identityID,
@@ -35,26 +32,10 @@ export class WithdrawalsActions {
             continuationToken,
             undefined
         );
-        destination.should.contain.keys('result');
-        return destination;
     }
 
     async createDestination(destination: Destination) {
-        const dest = await this.dispatcher.callMethod(
-            this.api.createDestination,
-            destination,
-            undefined
-        );
-        dest.should.contain.keys('name', 'identity', 'currency', 'resource');
-        return dest;
-    }
-
-    async createDestinationError(destination: Destination) {
-        return this.dispatcher
-            .callMethod(this.api.createDestination, destination, undefined)
-            .catch(error => {
-                return error;
-            });
+        return this.dispatcher.callMethod(this.api.createDestination, destination, undefined);
     }
 
     async listWithdrawals(
@@ -71,7 +52,7 @@ export class WithdrawalsActions {
         currencyID?: string,
         continuationToken?: string
     ) {
-        const withdrawals = await this.dispatcher.callMethod(
+        return this.dispatcher.callMethod(
             this.api.listWithdrawals,
             limit,
             undefined,
@@ -87,8 +68,6 @@ export class WithdrawalsActions {
             currencyID,
             continuationToken
         );
-        withdrawals.should.contain.keys('result');
-        return withdrawals;
     }
 
     async createWithdrawal(withdrawalParams: WithdrawalParameters) {
@@ -100,88 +79,48 @@ export class WithdrawalsActions {
     }
 
     async getDestination(destinationID: string) {
-        const destination = await this.dispatcher.callMethod(
-            this.api.getDestination,
-            destinationID,
-            undefined
-        );
-        destination.should.contain.keys('name', 'identity', 'currency', 'resource');
-        return destination;
+        return this.dispatcher.callMethod(this.api.getDestination, destinationID, undefined);
     }
 
     async issueDestinationGrant(destinationID: string) {
         const grantParams = getWithdrawalGrantParams();
-        const grant = await this.dispatcher.callMethod(
+        return this.dispatcher.callMethod(
             this.api.issueDestinationGrant,
             destinationID,
             grantParams,
             undefined
         );
-        grant.should.contain.keys('token', 'validUntil');
-        return grant;
     }
 
     async getWithdrawal(withdrawalID: string) {
-        const withdrawal = await this.dispatcher.callMethod(
-            this.api.getWithdrawal,
-            withdrawalID,
-            undefined
-        );
-        withdrawal.should.contain.keys('wallet', 'destination', 'body');
-        return withdrawal;
+        return this.dispatcher.callMethod(this.api.getWithdrawal, withdrawalID, undefined);
     }
 
     async getWithdrawalByExternal(externalID: string) {
-        const withdrawal = await this.dispatcher.callMethod(
+        return this.dispatcher.callMethod(
             this.api.getWithdrawalByExternalID,
             externalID,
             undefined
         );
-        withdrawal.should.contain.keys('wallet', 'destination', 'body', 'externalID');
-        return withdrawal;
     }
 
     async pollWithdrawalEvents(withdrawalID: string) {
-        const events = await this.dispatcher.callMethod(
+        return this.dispatcher.callMethod(
             this.api.pollWithdrawalEvents,
             withdrawalID,
             1000,
             undefined,
             undefined
         );
-        events.should.property('length').not.equal(0);
-        events[0].should.contain.keys('eventID', 'occuredAt', 'changes');
-        return events;
     }
 
-    async getWithdrawalEvents(withdrawalID: string, eventID: string) {
-        const event = await this.dispatcher.callMethod(
+    async getWithdrawalEvent(withdrawalID: string, eventID: string) {
+        return this.dispatcher.callMethod(
             this.api.getWithdrawalEvents,
             withdrawalID,
             eventID,
             undefined
         );
-        event.should.contain.keys('changes', 'eventID', 'occuredAt');
-        return event;
     }
 
-    async waitDestinationCreate(destinationID: string) {
-        let result = await Promise.race([
-            new Promise(res => setTimeout(res, 10000)),
-            this.pollDestinationCreation(destinationID)
-        ]);
-        if (result) {
-            return result;
-        }
-        throw 'poll destination create timeout';
-    }
-
-    async pollDestinationCreation(destinationID: string) {
-        let isCreated;
-        while (!isCreated) {
-            isCreated = (await this.getDestination(destinationID)).id;
-            await delay(1500);
-        }
-        return isCreated;
-    }
 }

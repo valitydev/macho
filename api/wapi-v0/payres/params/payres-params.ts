@@ -12,7 +12,7 @@ export function getBankCardParams(): BankCard {
     return {
         type: BankCardType.BankCard,
         cardNumber: '4242424242424242',
-        expDate: '12/21',
+        expDate: '12/29',
         cardHolder: 'LEXA SVOTIN',
         cvv: '123'
     };

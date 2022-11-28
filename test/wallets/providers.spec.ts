@@ -1,4 +1,7 @@
+import chai from 'chai';
 import { AuthActions, ProvidersActions } from '../../actions';
+
+chai.should();
 
 describe('Providers', () => {
     let providersActions: ProvidersActions;

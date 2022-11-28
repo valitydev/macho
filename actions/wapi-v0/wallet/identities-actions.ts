@@ -1,9 +1,6 @@
-import * as chai from 'chai';
 import { IdentitiesApiFp } from '../../../api/wapi-v0/wallet/codegen';
 import { getSimpleIdentityParams } from '../../../api/wapi-v0/wallet/params/identities-params/simple-identity-params';
 import { WAPIDispatcher } from '../../../utils/codegen-utils';
-
-chai.should();
 
 export class IdentitiesActions {
     private api;

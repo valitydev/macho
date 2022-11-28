@@ -1,5 +1,8 @@
+import chai from 'chai';
 import { IdentitiesActions } from '../../actions/wapi-v0';
 import { AuthActions } from '../../actions';
+
+chai.should();
 
 describe('Identities', () => {
     let identitiesActions: IdentitiesActions;
