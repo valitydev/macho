@@ -56,7 +56,10 @@ describe('Test transaction', () => {
         const invoiceActions = new InvoicesActions(accessToken);
         const invoiceEventActions = new InvoicesEventActions(accessToken);
         const paymentActions = new PaymentsActions(accessToken);
-        const invoice = await measure(invoiceActions.createSimpleInvoice, invoiceActions);
+        const invoice = await measure(
+            () => invoiceActions.createSimpleInvoice(testShopID),
+            invoiceActions
+        );
         const invoiceID = invoice.result.invoice.id;
         const invoiceAccessToken = invoice.result.invoiceAccessToken.payload;
         const tokensActions = new TokensActions(invoiceAccessToken);
