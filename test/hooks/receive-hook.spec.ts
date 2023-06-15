@@ -2,6 +2,7 @@ import chai from 'chai';
 import { PaymentConditions, RefundConditions, ShopConditions } from '../../conditions';
 import delay from '../../utils/delay';
 import { WebhooksActions } from '../../actions/capi-v2/webhooks-actions';
+import { AuthActions, PartiesActions } from '../../actions';
 import { InvoicesTopic } from '../../api/capi-v2/codegen';
 import { refundParams } from '../../api/capi-v2/params';
 
@@ -32,16 +33,24 @@ describe('Hooks', () => {
     let refundConditions: RefundConditions;
     let webhooksActions: WebhooksActions;
     let liveShopID: string;
+    let partyID: string;
     let liveInvoiceID: string;
     let livePaymentID: string;
 
     before(async () => {
         const shopConditions = await ShopConditions.getInstance();
-        const shop = await shopConditions.createShop();
+        const authActions = AuthActions.getInstance();
+        const [externalAccessToken, shop] = await Promise.all([
+            authActions.getExternalAccessToken(),
+            shopConditions.createShop()
+        ]);
         paymentCondition = await PaymentConditions.getInstance();
         refundConditions = await RefundConditions.getInstance();
         webhooksActions = await WebhooksActions.getInstance();
         liveShopID = shop.id;
+        const partiesActions = new PartiesActions(externalAccessToken);
+        const party = await partiesActions.getActiveParty();
+        partyID = party.id;
     });
 
     describe('Webhook creation and receipt validation', async () => {
@@ -68,7 +77,7 @@ describe('Hooks', () => {
 
         it('Should create and send webhook on full cycle of payment', async () => {
             const amount = 10000;
-            const payment = await paymentCondition.proceedInstantPayment(liveShopID, amount);
+            const payment = await paymentCondition.proceedInstantPayment(partyID, liveShopID, amount);
             await refundConditions.proceedRefund(payment, refundParams(8000));
             liveInvoiceID = payment.invoiceID;
             livePaymentID = payment.id;

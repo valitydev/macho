@@ -51,7 +51,7 @@ describe('Refunds', () => {
         let refund: Refund;
 
         it('should create single full refund', async () => {
-            payment = await paymentCondition.proceedInstantPayment(shopID);
+            payment = await paymentCondition.proceedInstantPayment(partyID, shopID);
             refund = await refundConditions.proceedRefund(payment, refundParams(10000));
             refund.should.have.property('id').to.be.a('string');
             // @ts-ignore
@@ -91,7 +91,7 @@ describe('Refunds', () => {
     });
 
     it('should create several partial refunds', async () => {
-        const payment = await paymentCondition.proceedInstantPayment(shopID, 10000);
+        const payment = await paymentCondition.proceedInstantPayment(partyID, shopID, 10000);
         const refund1 = await refundConditions.proceedRefund(payment, refundParams(2000, 'RUB'));
         refund1.should.have.property('amount').equal(2000);
         const refund2 = await refundConditions.proceedRefund(payment, refundParams(8000));
@@ -99,7 +99,7 @@ describe('Refunds', () => {
     });
 
     it('should be idempotent', async () => {
-        const payment = await paymentCondition.proceedInstantPayment(shopID);
+        const payment = await paymentCondition.proceedInstantPayment(partyID, shopID);
         let refundParamsExternalId = refundParams(2000, 'RUB', '42');
         let refund1 = await paymentsActions.createRefund(
             payment.invoiceID,
@@ -115,7 +115,7 @@ describe('Refunds', () => {
     });
 
     it('should fail with different params', async () => {
-        const payment = await paymentCondition.proceedInstantPayment(shopID);
+        const payment = await paymentCondition.proceedInstantPayment(partyID, shopID);
         let refund = await paymentsActions.createRefund(
             payment.invoiceID,
             payment.id,

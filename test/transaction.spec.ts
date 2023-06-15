@@ -3,6 +3,7 @@ import { Statuses, TransactionReporter } from '../utils/transaction-reporter';
 import { measure } from '../utils';
 import {
     // ClaimsActions,
+    PartiesActions,
     InvoicesActions,
     InvoicesEventActions,
     isInvoicePaid,
@@ -25,6 +26,7 @@ describe('Test transaction', () => {
 
     const testShopID = yargs.argv['test-shop-id'];
     let accessToken: string;
+    let partyID: string;
 
     before(async () => {
         try {
@@ -33,7 +35,9 @@ describe('Test transaction', () => {
             accessToken = response.result;
             const shopsActions = new ShopsActions(accessToken);
             try {
-                await shopsActions.getShopByID(testShopID);
+                const party = await (await PartiesActions.getInstance()).getActiveParty();
+                await shopsActions.getShopByID(testShopID, party.id);
+                partyID = party.id;
             } catch (e) {
                 const createTestShop = yargs.argv['create-test-shop'];
                 if (e.status === 404 && createTestShop) {
@@ -57,7 +61,7 @@ describe('Test transaction', () => {
         const invoiceEventActions = new InvoicesEventActions(accessToken);
         const paymentActions = new PaymentsActions(accessToken);
         const invoice = await measure(
-            () => invoiceActions.createSimpleInvoice(testShopID),
+            () => invoiceActions.createSimpleInvoice(partyID, testShopID),
             invoiceActions
         );
         const invoiceID = invoice.result.invoice.id;

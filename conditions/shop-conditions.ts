@@ -3,6 +3,7 @@ import { PartiesActions, ShopsActions } from '../actions/capi-v2';
 import { ClaimsActions } from '../actions/claim-management-v1';
 import { AdminActions } from '../actions/claim-admin';
 import { Shop } from '../api/capi-v2/codegen';
+import { createTestShop } from '../settings';
 import guid from '../utils/guid';
 import until from '../utils/until';
 
@@ -39,17 +40,27 @@ export class ShopConditions {
     }
 
     async createShop(): Promise<Shop> {
+        const shopID = 'TEST';
         const party = await this.partiesActions.getActiveParty();
-        const shopID = guid();
-        const claim = await this.claimsActions.createShopClaim(party.id, shopID);
-        await until(() => this.claimsActions.getClaim(party.id, claim.id))
+        let result = await this.shopsActions.getShopByID(shopID, party.id);
+        if(result == null && createTestShop){
+            const claim = await this.claimsActions.createShopClaim(party.id, shopID);
+            await until(() => this.claimsActions.getClaim(party.id, claim.id))
+                .satisfy(claim => {
+                    if (claim.status !== 'pending') {
+                        throw new Error(`Claim ${claim.id} status is ${claim.status} await pending`);
+                    }
+                });
+            await this.adminActions.acceptClaim(party.id, claim.id);
+            await until(() => this.claimsActions.getClaim(party.id, claim.id))
             .satisfy(claim => {
                 if (claim.status !== 'accepted') {
-                    throw new Error(`Claim ${claim.id} status is ${claim.status}`);
+                    throw new Error(`Claim ${claim.id} status is ${claim.status} await accepted`);
                 }
             });
-        await this.adminActions.acceptClaim(party.id, claim.id);
-        return await this.shopsActions.getShopByID(shopID);
+            result = await this.shopsActions.getShopByID(shopID, party.id);
+        }
+        return result;
     }
 
     async createShopWithPayoutSchedule(scheduleID = 1): Promise<Shop> {

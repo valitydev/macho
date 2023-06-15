@@ -6,7 +6,8 @@ import {
     isInvoicePaid,
     isPaymentCaptured,
     PaymentsActions,
-    TokensActions
+    TokensActions,
+    PartiesActions
 } from '../../actions/capi-v2';
 import { ShopConditions } from '../../conditions/shop-conditions';
 import { ProxyApiForTests } from '../../api/proxy-api';
@@ -20,6 +21,7 @@ describe('QIWI', () => {
     let paymentActions: PaymentsActions;
     let proxyApiForTests: ProxyApiForTests;
     let liveShopID: string;
+    let partyID: string;
 
     before(async () => {
         const shopConditions = await ShopConditions.getInstance();
@@ -32,10 +34,13 @@ describe('QIWI', () => {
         paymentActions = new PaymentsActions(externalAccessToken);
         proxyApiForTests = new ProxyApiForTests(externalAccessToken);
         liveShopID = liveShop.id;
+        const partiesActions = new PartiesActions(externalAccessToken);
+        const party = await partiesActions.getActiveParty();
+        partyID = party.id;
     });
 
     it('should successfully pay an invoice w/ qiwi wallet', async () => {
-        const { invoice, invoiceAccessToken } = await invoiceActions.createSimpleInvoice(liveShopID);
+        const { invoice, invoiceAccessToken } = await invoiceActions.createSimpleInvoice(partyID, liveShopID);
         const tokensActions = new TokensActions(invoiceAccessToken.payload);
         const paymentResource = await tokensActions.createPaymentResource(qiwiPaymentTool);
         const payment = await paymentActions.createInstantPayment(invoice.id, paymentResource);

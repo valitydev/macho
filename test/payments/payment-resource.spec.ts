@@ -3,7 +3,7 @@ import chaiAsPromised from 'chai-as-promised';
 import { AxiosError } from 'axios';
 import { ShopConditions } from '../../conditions';
 import { AuthActions } from '../../actions';
-import { TokensActions, InvoicesActions } from '../../actions/capi-v2';
+import { TokensActions, InvoicesActions, PartiesActions } from '../../actions/capi-v2';
 import {
     saneVisaPaymentTool,
     secureVisaPaymentTool,
@@ -31,8 +31,10 @@ describe('Payment resource', () => {
             authActions.getExternalAccessToken(),
             shopConditions.createShop()
         ]);
+        const partiesActions = new PartiesActions(externalAccessToken);
+        const party = await partiesActions.getActiveParty();
         const invoiceActions = new InvoicesActions(externalAccessToken);
-        const invoiceAndToken = await invoiceActions.createSimpleInvoice(shop.id);
+        const invoiceAndToken = await invoiceActions.createSimpleInvoice(party.id, shop.id);
         const invoiceAccessToken = invoiceAndToken.invoiceAccessToken.payload;
         tokensActions = new TokensActions(invoiceAccessToken);
     });

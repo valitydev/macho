@@ -31,6 +31,8 @@ export var binapiEndpoint: string;
 export var testWebhookReceiverInternal: string;
 export var testWebhookReceiverEndpoint: string;
 
+export var createTestShop: boolean;
+export var testPartyID: string;
 export var testDir: string;
 export var verbose: boolean;
 
@@ -132,6 +134,7 @@ export const setup = (argv: string[]): { mocha: Mocha, args: Record<string, any>
         .describe('polling-warn', 'Polling payment and invoice events warn threshold in ms')
         .describe('fulfill-invoice-warn', 'Fulfill invoice warn threshold in ms')
         .describe('test-shop-id', 'Test shopID for test transaction')
+        .describe('test-party-id', 'Test partyID for test')
         .describe('create-test-shop', 'Create test shop if not found')
         .env('MOCHA')
         .boolean('verbose')
@@ -181,8 +184,10 @@ export const setup = (argv: string[]): { mocha: Mocha, args: Record<string, any>
     binapiEndpoint = apiEndpoint + '/binbase';
     claimAdminEndpoint = adminEndpoint + '/v1/cm';
     testWebhookReceiverInternal = 'http://test-webhook-receiver:8080';
-    testWebhookReceiverEndpoint = args['test-webhook-receiver-endpoint'];    
+    testWebhookReceiverEndpoint = args['test-webhook-receiver-endpoint'];
 
+    createTestShop = args['create-test-shop'];
+    testPartyID = args['test-party-id'];
     testDir = args['test-dir'];
     verbose = args['verbose'];
 

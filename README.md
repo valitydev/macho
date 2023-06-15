@@ -99,12 +99,19 @@ node ./mocha-tests.js --verbose --file=build/test/invoice-management.spec.js
 
 Пример:
 ```
-node ./mocha-tests.js --verbose --file=build/test/invoice-management.spec.js \
-    --auth-endpoint http://auth.empayre.test \
-    --external-login demo-merchant \
-    --external-password test \
-    --api-endpoint http://api.empayre.test \
-    --admin-endpoint http://iddqd.empayre.test
+node ./mocha-tests.js \
+    --auth-endpoint https://auth.stage.empayre.com \
+    --external-login merchant@its.demo \
+    --external-password Parolec0 \
+    --internal-login manager \
+    --internal-password Parolec0 \
+    --create-test-shop true \
+    --test-party-id 639727dc-59c1-41c9-834c-85a1e43c04ea \
+    --api-endpoint https://api.stage.empayre.com \
+    --admin-endpoint https://iddqd.stage.empayre.com \
+    --proxy-endpoint https://wrapper.stage.empayre.com \
+    --url-shortener-endpoint https://shrt.stage.empayre.com \
+    --test-webhook-receiver-endpoint https://test-webhook-receiver.stage.empayre.com
 ```
 
 ### Вариант 2. Запуск и отладка с использованием Intellij IDEA, WebStorm

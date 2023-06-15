@@ -3,11 +3,13 @@ import { InvoiceLineTaxMode, InvoiceLineTaxVAT, InvoiceParams } from '../../code
 import { Invoice, InvoiceParamsWithTemplate } from '../../index';
 
 export function simpleInvoiceParams(
+    partyID: string,
     shopID: string,
     amount: number = 10000,
     params?: {}
 ): InvoiceParams {
     return {
+        partyID: partyID,
         shopID: shopID,
         dueDate: moment()
             .add(1, 'days')

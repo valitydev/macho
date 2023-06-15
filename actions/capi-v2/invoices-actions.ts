@@ -18,7 +18,11 @@ export class InvoicesActions {
     private dispatcher: CAPIDispatcher;
 
     constructor(accessToken: string) {
-        this.dispatcher = new CAPIDispatcher({});
+        this.dispatcher = new CAPIDispatcher({
+            headers: {
+                origin: 'https://dashboard.stage.empayre.com'
+            }
+        });
         this.api = InvoicesApiFp({
             apiKey: `Bearer ${accessToken}`
         });
@@ -29,11 +33,12 @@ export class InvoicesActions {
     }
 
     createSimpleInvoice(
+        partyID: string,
         shopID: string,
         amount: number = 10000,
         params?: {}
     ): Promise<InvoiceAndToken> {
-        return this.createInvoice(simpleInvoiceParams(shopID, amount, params));
+        return this.createInvoice(simpleInvoiceParams(partyID, shopID, amount, params));
     }
 
     createInvoiceAccessToken(invoiceID: string): Promise<AccessToken> {

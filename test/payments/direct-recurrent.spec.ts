@@ -4,7 +4,8 @@ import {
     InvoicesActions,
     InvoicesEventActions,
     PaymentsActions,
-    TokensActions
+    TokensActions,
+    PartiesActions
 } from '../../actions/capi-v2';
 import {
     PaymentRecurrentParent,
@@ -17,6 +18,7 @@ describe('Direct recurrent payments', () => {
     let invoiceActions: InvoicesActions;
     let invoiceEventActions: InvoicesEventActions;
     let liveShopID: string;
+    let partyID: string;
 
     before(async () => {
         const shopConditions = await ShopConditions.getInstance();
@@ -29,10 +31,13 @@ describe('Direct recurrent payments', () => {
         invoiceEventActions = new InvoicesEventActions(externalAccessToken);
         paymentsActions = new PaymentsActions(externalAccessToken);
         liveShopID = shop.id;
+        const partiesActions = new PartiesActions(externalAccessToken);
+        const party = await partiesActions.getActiveParty();
+        partyID = party.id;
     });
 
     it('Create and proceed first payment', async () => {
-        const { invoice, invoiceAccessToken } = await invoiceActions.createSimpleInvoice(liveShopID, 10000);
+        const { invoice, invoiceAccessToken } = await invoiceActions.createSimpleInvoice(partyID, liveShopID, 10000);
         const tokensActions = new TokensActions(invoiceAccessToken.payload);
         const paymentResource = await tokensActions.createPaymentResource(saneVisaPaymentTool);
         const payment = await paymentsActions.createFirstRecurrentPayment(invoice.id, paymentResource);
@@ -51,7 +56,7 @@ describe('Direct recurrent payments', () => {
         const {
             invoice: invoice1,
             invoiceAccessToken: invoiceAccessToken1
-        } = await invoiceActions.createSimpleInvoice(liveShopID);
+        } = await invoiceActions.createSimpleInvoice(partyID, liveShopID);
         const tokensActions = new TokensActions(invoiceAccessToken1.payload);
         const paymentResource = await tokensActions.createPaymentResource(saneVisaPaymentTool);
         const payment1 = await paymentsActions.createFirstRecurrentPayment(invoice1.id, paymentResource);
@@ -62,7 +67,7 @@ describe('Direct recurrent payments', () => {
         payment1.should.have.property('id').to.be.a('string');
         payment1.should.have.property('invoiceID').equal(invoice1.id);
         payment1.should.have.property('makeRecurrent').equal(true);
-        const { invoice: invoice2 } = await invoiceActions.createSimpleInvoice(liveShopID);
+        const { invoice: invoice2 } = await invoiceActions.createSimpleInvoice(partyID, liveShopID);
         const parent: PaymentRecurrentParent = {
             paymentID: payment1.id,
             invoiceID: invoice1.id

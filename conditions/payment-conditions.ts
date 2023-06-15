@@ -34,10 +34,11 @@ export class PaymentConditions {
     }
 
     async proceedInstantPayment(
+        partyID: string,
         shopID: string,
         amount: number = 10000
     ): Promise<Payment> {
-        const { invoice, invoiceAccessToken } = await this.invoiceActions.createSimpleInvoice(shopID, amount);
+        const { invoice, invoiceAccessToken } = await this.invoiceActions.createSimpleInvoice(partyID, shopID, amount);
         const tokensActions = new TokensActions(invoiceAccessToken.payload);
         const paymentResource = await tokensActions.createPaymentResource(saneVisaPaymentTool);
         return this.proceedInstantPaymentExtend(paymentResource, invoice);

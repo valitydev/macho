@@ -2,6 +2,7 @@ import * as chai from 'chai';
 import { PartiesApiFp, Party } from '../../api/capi-v2/codegen';
 import { CAPIDispatcher } from '../../utils/codegen-utils';
 import { AuthActions } from '../auth-actions';
+import { testPartyID } from '../../settings';
 
 chai.should();
 
@@ -31,6 +32,9 @@ export class PartiesActions {
     }
 
     getActiveParty(): Promise<Party> {
-        return this.dispatcher.callMethod(this.api.getMyParty);
+        return this.dispatcher.callMethod(this.api.getPartyByID, testPartyID).then(party => {
+            party.should.to.have.property('id').to.be.a('string');
+            return party;
+        });
     }
 }

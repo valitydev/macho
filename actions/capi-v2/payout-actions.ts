@@ -7,7 +7,11 @@ export class PayoutActions {
     private dispatcher: CAPIDispatcher;
 
     constructor(accessToken: string) {
-        this.dispatcher = new CAPIDispatcher({});
+        this.dispatcher = new CAPIDispatcher({
+            headers: {
+                origin: 'https://dashboard.stage.empayre.com'
+            }
+        });
         this.api = PayoutsApiFp({
             apiKey: `Bearer ${accessToken}`
         });

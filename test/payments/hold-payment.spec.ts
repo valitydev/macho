@@ -7,7 +7,8 @@ import {
     InvoicesActions,
     InvoicesEventActions,
     PaymentsActions,
-    TokensActions
+    TokensActions,
+    PartiesActions
 } from '../../actions/capi-v2';
 import {
     PaymentFlow,
@@ -30,6 +31,7 @@ describe('Hold payments', () => {
     let invoiceActions: InvoicesActions;
     let invoiceEventActions: InvoicesEventActions;
     let liveShopID: string;
+    let partyID: string;
 
     before(async () => {
         const shopConditions = await ShopConditions.getInstance();
@@ -42,10 +44,13 @@ describe('Hold payments', () => {
         invoiceEventActions = new InvoicesEventActions(externalAccessToken);
         paymentsActions = new PaymentsActions(externalAccessToken);
         liveShopID = shop.id;
+        const partiesActions = new PartiesActions(externalAccessToken);
+        const party = await partiesActions.getActiveParty();
+        partyID = party.id;
     });
 
     it('Auto captured payment', async () => {
-        const { invoice, invoiceAccessToken }  = await invoiceActions.createSimpleInvoice(liveShopID);
+        const { invoice, invoiceAccessToken }  = await invoiceActions.createSimpleInvoice(partyID, liveShopID);
         const tokensActions = new TokensActions(invoiceAccessToken.payload);
         const paymentResource = await tokensActions.createPaymentResource(saneVisaPaymentTool);
         const payment = await paymentsActions.createHoldPayment(
@@ -69,7 +74,7 @@ describe('Hold payments', () => {
 
     it('Manual captured payment', async () => {
         const amount = 1001;
-        const { invoice, invoiceAccessToken } = await invoiceActions.createSimpleInvoice(liveShopID, amount);
+        const { invoice, invoiceAccessToken } = await invoiceActions.createSimpleInvoice(partyID, liveShopID, amount);
         const tokensActions = new TokensActions(invoiceAccessToken.payload);
         const paymentResource = await tokensActions.createPaymentResource(saneVisaPaymentTool);
         const payment = await paymentsActions.createHoldPayment(
@@ -100,7 +105,7 @@ describe('Hold payments', () => {
     });
 
     it('Manual partial captured payment', async () => {
-        const { invoice, invoiceAccessToken } = await invoiceActions.createSimpleInvoice(liveShopID, 10000);
+        const { invoice, invoiceAccessToken } = await invoiceActions.createSimpleInvoice(partyID, liveShopID, 10000);
         const tokensActions = new TokensActions(invoiceAccessToken.payload);
         const paymentResource = await tokensActions.createPaymentResource(saneVisaPaymentTool);
         const payment = await paymentsActions.createHoldPayment(
@@ -125,7 +130,7 @@ describe('Hold payments', () => {
     });
 
     it('Failed manual partial capture payment', async () => {
-        const { invoice, invoiceAccessToken } = await invoiceActions.createSimpleInvoice(liveShopID);
+        const { invoice, invoiceAccessToken } = await invoiceActions.createSimpleInvoice(partyID, liveShopID);
         const tokensActions = new TokensActions(invoiceAccessToken.payload);
         const paymentResource = await tokensActions.createPaymentResource(saneVisaPaymentTool);
         const payment = await paymentsActions.createHoldPayment(

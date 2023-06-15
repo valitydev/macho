@@ -66,7 +66,7 @@ describe('Instant payments', () => {
         it('should create and proceed payment', async () => {
             const amount = 1000;
             const metadata = { hey: 'there', im: [1, 3, 3, 7] };
-            const { invoice, invoiceAccessToken } = await invoiceActions.createSimpleInvoice(liveShopID, amount);
+            const { invoice, invoiceAccessToken } = await invoiceActions.createSimpleInvoice(partyID, liveShopID, amount);
             const tokensActions = new TokensActions(invoiceAccessToken.payload);
             const paymentResource = await tokensActions.createPaymentResource(saneVisaPaymentTool);
             const payment = await paymentConditions.proceedInstantPaymentExtend(
@@ -131,7 +131,7 @@ describe('Instant payments', () => {
         let promises = [];
         let tries = 10;
         const externalID = guid();
-        const { invoice, invoiceAccessToken } = await invoiceActions.createSimpleInvoice(liveShopID, amount);
+        const { invoice, invoiceAccessToken } = await invoiceActions.createSimpleInvoice(partyID, liveShopID, amount);
         const tokensActions = new TokensActions(invoiceAccessToken.payload);
         const paymentResource = await tokensActions.createPaymentResource(saneVisaPaymentTool);
         while (tries > 0) {
@@ -152,7 +152,7 @@ describe('Instant payments', () => {
     });
 
     it('should create and proceed payment with 3DS', async () => {
-        const { invoice, invoiceAccessToken } = await invoiceActions.createSimpleInvoice(liveShopID);
+        const { invoice, invoiceAccessToken } = await invoiceActions.createSimpleInvoice(partyID, liveShopID);
         const tokensActions = new TokensActions(invoiceAccessToken.payload);
         const paymentResource = await tokensActions.createPaymentResource(secureVisaPaymentTool);
         const payment = await paymentsActions.createInstantPayment(invoice.id, paymentResource);
@@ -168,7 +168,7 @@ describe('Instant payments', () => {
     });
 
     it('should create and proceed payment with 3DS + empty cvv', async () => {
-        const { invoice, invoiceAccessToken } = await invoiceActions.createSimpleInvoice(liveShopID);
+        const { invoice, invoiceAccessToken } = await invoiceActions.createSimpleInvoice(partyID, liveShopID);
         const tokensActions = new TokensActions(invoiceAccessToken.payload);
         const paymentResource = await tokensActions.createPaymentResource(secureEmptyCVVVisaPaymentTool);
         const payment = await paymentsActions.createInstantPayment(invoice.id, paymentResource);
@@ -184,7 +184,7 @@ describe('Instant payments', () => {
     });
 
     it('payment with invalid card should fail', async () => {
-        const { invoice, invoiceAccessToken } = await invoiceActions.createSimpleInvoice(liveShopID);
+        const { invoice, invoiceAccessToken } = await invoiceActions.createSimpleInvoice(partyID, liveShopID);
         const tokensActions = new TokensActions(invoiceAccessToken.payload);
         const paymentResource = await tokensActions.createPaymentResource(insufficientFundsVisaTool);
         const payment = await paymentsActions.createInstantPayment(invoice.id, paymentResource);

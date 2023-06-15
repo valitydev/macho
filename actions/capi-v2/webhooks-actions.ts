@@ -21,7 +21,11 @@ export class WebhooksActions {
     }
 
     private constructor(exToken: string) {
-        this.dispatcher = new CAPIDispatcher({});
+        this.dispatcher = new CAPIDispatcher({
+            headers: {
+                origin: 'https://dashboard.stage.empayre.com'
+            }
+        });
         this.api = WebhooksApiFp({
             apiKey: `Bearer ${exToken}`
         });
