@@ -10,10 +10,12 @@ import TaxModeT = InvoiceLineTaxMode.TypeEnum;
 import VatRateT = InvoiceLineTaxVAT.RateEnum;
 
 export function simpleInvoiceTemplateParams(
+    partyID: string,
     shopID: string,
     params?: {}
 ): InvoiceTemplateCreateParams {
     return {
+        partyID,
         shopID,
         product: 'Test product',
         description: 'Test product description',

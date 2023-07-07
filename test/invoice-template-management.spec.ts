@@ -1,7 +1,7 @@
 import * as chai from 'chai';
 import chaiAsPromised from 'chai-as-promised';
 import { AxiosError } from 'axios';
-import { AuthActions } from '../actions';
+import { AuthActions, PartiesActions } from '../actions';
 import { ShopConditions } from '../conditions/shop-conditions';
 import { InvoiceTemplatesActions } from '../actions/capi-v2/invoice-templates-actions';
 import { simpleInvoiceTemplateParams } from '../api/capi-v2/params/invoice-template-params/invoice-template-params';
@@ -12,6 +12,7 @@ chai.use(chaiAsPromised);
 describe('Invoice Template Management', () => {
     let invoiceTemplatesActions: InvoiceTemplatesActions;
     let liveShopID: string;
+    let partyID: string;
 
     before(async () => {
         const shopConditions = await ShopConditions.getInstance();
@@ -22,10 +23,13 @@ describe('Invoice Template Management', () => {
         ]);
         liveShopID = liveShop.id;
         invoiceTemplatesActions = new InvoiceTemplatesActions(externalAccessToken);
+        const partiesActions = new PartiesActions(externalAccessToken);
+        const party = await partiesActions.getActiveParty();
+        partyID = party.id;
     });
 
     it('Create invoice template', async () => {
-        const result = await invoiceTemplatesActions.createSimpleInvoiceTemplate(liveShopID);
+        const result = await invoiceTemplatesActions.createSimpleInvoiceTemplate(partyID, liveShopID);
         result.should.have.property('invoiceTemplate');
         result.should.have.property('invoiceTemplateAccessToken');
         const invoiceTemplate = result.invoiceTemplate;
@@ -47,7 +51,7 @@ describe('Invoice Template Management', () => {
 
     it('Create invoice with template', async () => {
         const { invoiceTemplate } =
-            await invoiceTemplatesActions.createSimpleInvoiceTemplate(liveShopID);
+            await invoiceTemplatesActions.createSimpleInvoiceTemplate(partyID, liveShopID);
         const invoiceAndToken =
             await invoiceTemplatesActions.createInvoiceWithTemplate(invoiceTemplate.id);
         invoiceAndToken.should.to.have.property('invoice');
@@ -80,15 +84,15 @@ describe('Invoice Template Management', () => {
 
     it('Get invoice template by id', async () => {
         const { invoiceTemplate } =
-            await invoiceTemplatesActions.createSimpleInvoiceTemplate(liveShopID);
+            await invoiceTemplatesActions.createSimpleInvoiceTemplate(partyID, liveShopID);
         const result = await invoiceTemplatesActions.getInvoiceTemplateById(invoiceTemplate.id);
         result.should.deep.equal(invoiceTemplate);
     });
 
     it('Update invoice template', async () => {
         const { invoiceTemplate } =
-            await invoiceTemplatesActions.createSimpleInvoiceTemplate(liveShopID);
-        const invoiceTemplateCreateParams = simpleInvoiceTemplateParams(liveShopID, {
+            await invoiceTemplatesActions.createSimpleInvoiceTemplate(partyID, liveShopID);
+        const invoiceTemplateCreateParams = simpleInvoiceTemplateParams(partyID, liveShopID, {
             description: 'Absolutely new description'
         });
         const result = await invoiceTemplatesActions.updateInvoiceTemplate(
@@ -112,7 +116,7 @@ describe('Invoice Template Management', () => {
 
     it('Delete invoice template', async () => {
         const { invoiceTemplate } =
-            await invoiceTemplatesActions.createSimpleInvoiceTemplate(liveShopID);
+            await invoiceTemplatesActions.createSimpleInvoiceTemplate(partyID, liveShopID);
         await invoiceTemplatesActions.deleteInvoiceTemplate(invoiceTemplate.id);
         const error =
             await invoiceTemplatesActions.getInvoiceTemplateById(invoiceTemplate.id)

@@ -18,7 +18,11 @@ export class InvoicesEventActions extends EventActions {
 
     constructor(accessToken: string) {
         super();
-        this.dispatcher = new CAPIDispatcher({});
+        this.dispatcher = new CAPIDispatcher({
+            headers: {
+                origin: 'https://dashboard.stage.empayre.com'
+            }
+        });
         this.api = InvoicesApiFp({
             apiKey: `Bearer ${accessToken}`
         });

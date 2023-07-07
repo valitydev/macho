@@ -25,8 +25,8 @@ export class InvoiceTemplatesActions {
         });
     }
 
-    createSimpleInvoiceTemplate(shopID: string): Promise<InvoiceTemplateAndToken> {
-        let templateParams: InvoiceTemplateCreateParams = simpleInvoiceTemplateParams(shopID);
+    createSimpleInvoiceTemplate(partyID: string, shopID: string): Promise<InvoiceTemplateAndToken> {
+        let templateParams: InvoiceTemplateCreateParams = simpleInvoiceTemplateParams(partyID, shopID);
         return this.dispatcher
             .callMethod(this.api.createInvoiceTemplate, templateParams);
     }
