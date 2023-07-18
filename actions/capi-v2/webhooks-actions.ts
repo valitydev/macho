@@ -34,6 +34,7 @@ export class WebhooksActions {
     async createWebhook(
         shopID: string,
         testId: string,
+        partyID: string,
         eventTypes: Array<InvoicesTopic.EventTypesEnum>
     ): Promise<Webhook> {
         return this.dispatcher
@@ -45,7 +46,8 @@ export class WebhooksActions {
                         shopID: shopID,
                         eventTypes: eventTypes
                     } as InvoicesTopic,
-                    testId
+                    testId,
+                    partyID
                 )
             )
             .then(webhook => {

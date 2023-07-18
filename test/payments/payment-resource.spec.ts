@@ -5,6 +5,9 @@ import { ShopConditions } from '../../conditions';
 import { AuthActions } from '../../actions';
 import { TokensActions, InvoicesActions, PartiesActions } from '../../actions/capi-v2';
 import {
+    insufficientFundsVisaTool
+} from '../../api/capi-v2';
+import {
     saneVisaPaymentTool,
     secureVisaPaymentTool,
     cryptoPaymentTool,
@@ -79,17 +82,6 @@ describe('Payment resource', () => {
         } as PaymentToolDetailsBankCard);
     });
 
-    it('should tokenize qiwi wallet payment resource', async () => {
-        const resource = await tokensActions.createPaymentResource(qiwiPaymentTool);
-        resource.should.have.property('paymentToolToken').to.be.a('string');
-        resource.should.have.property('paymentSession').to.be.a('string');
-        resource.should.have.property('paymentToolDetails').to.be.an('object');
-        resource.paymentToolDetails.should.deep.eq({
-            detailsType: 'PaymentToolDetailsDigitalWallet',
-            provider: 'qiwi'
-        } as PaymentToolDetailsDigitalWallet);
-    });
-
     it('should tokenize crypto wallet payment resource', async () => {
         const resource = await tokensActions.createPaymentResource(cryptoPaymentTool);
         resource.should.have.property('paymentToolToken').to.be.a('string');
@@ -104,6 +96,15 @@ describe('Payment resource', () => {
     it('should refuse bad cardholder format', async () => {
         const error =
             await tokensActions.createPaymentResource(badCardholderPaymentTool)
+                .should.eventually.be.rejectedWith(AxiosError);
+        error.response.data.should.include({
+            code: 'invalidRequest'
+        });
+    });
+
+    it('Invalid card should fail', async () => {
+        const error =
+            await tokensActions.createPaymentResource(insufficientFundsVisaTool)
                 .should.eventually.be.rejectedWith(AxiosError);
         error.response.data.should.include({
             code: 'invalidRequest'

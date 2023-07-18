@@ -58,6 +58,7 @@ describe('Hooks', () => {
             await webhooksActions.createWebhook(
                 liveShopID,
                 liveShopID,
+                partyID,
                 Array.of(
                     InvoicesTopic.EventTypesEnum.InvoiceCreated,
                     InvoicesTopic.EventTypesEnum.InvoicePaid,

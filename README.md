@@ -99,14 +99,14 @@ node ./mocha-tests.js --verbose --file=build/test/invoice-management.spec.js
 
 Пример:
 ```
-node ./mocha-tests.js --verbose --file=build/test/payments/direct-recurrent.spec.js \
+node ./mocha-tests.js --file=build/test/payments/instant-payment.spec.js \
     --auth-endpoint https://auth.stage.empayre.com \
     --external-login merchant@its.demo \
     --external-password Parolec0 \
     --internal-login manager \
     --internal-password Parolec0 \
-    --verbose true \
     --create-test-shop true \
+    --verbose true \
     --test-party-id 639727dc-59c1-41c9-834c-85a1e43c04ea \
     --api-endpoint https://api.stage.empayre.com \
     --admin-endpoint https://iddqd.stage.empayre.com \

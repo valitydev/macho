@@ -29,11 +29,11 @@ export class InvoicesEventActions extends EventActions {
     }
 
     async getEvents(invoiceID: string, limit: number = 1000, after?: number): Promise<InvoiceEvent[]> {
-        return await this.dispatcher.callMethod(
+        return await this.dispatcher.callMethodWithDeadline(
             this.api.getInvoiceEvents,
             invoiceID,
             limit,
-            undefined,
+            undefined, // Deadline
             after
         );
     }

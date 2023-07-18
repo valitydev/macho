@@ -8,13 +8,14 @@ import {
 
 const defaultOptions = {
     headers: {
-        'Content-Type': 'application/json; charset=utf-8'
+        'Content-Type': 'application/json; charset=utf-8',
+        'origin': 'https://dashboard.stage.empayre.com'
     }
 };
 
 export class APIDispatcher {
     private endpoint: string;
-    private requestOptions: any;
+    protected requestOptions: any;
 
     constructor(endpoint: string, requestOptions: any = {}) {
         this.endpoint = endpoint;
@@ -23,6 +24,12 @@ export class APIDispatcher {
 
     callMethod<R = any>(fn: (...args: any[]) => Promise<R>, ...args: any[]): Promise<R> {
         const xRequestID = guid();
+        return fn.apply(null, [xRequestID, ...args, this.requestOptions])(fetch, this.endpoint);
+    }
+
+    callMethodWithDeadline<R = any>(fn: (...args: any[]) => Promise<R>, ...args: any[]): Promise<R> {
+        const xRequestID = guid();
+        // throw new Error('Headers was ' + JSON.stringify(this.requestOptions));
         return fn.apply(null, [xRequestID, ...args, this.requestOptions])(fetch, this.endpoint);
     }
 }
@@ -35,6 +42,12 @@ export class CAPIDispatcher extends APIDispatcher {
     callMethod<R = any>(fn: (...args: any[]) => Promise<R>, ...args: any[]): Promise<R> {
         // Every CAPI method has a xRequestDeadline as last argument
         return super.callMethod(fn, ...args, undefined);
+    }
+
+    callMethodWithDeadline<R = any>(fn: (...args: any[]) => Promise<R>, ...args: any[]): Promise<R> {
+        // Every CAPI method has a xRequestDeadline as last argument
+        // throw new Error('Headers was ' + JSON.stringify(this.requestOptions));
+        return super.callMethodWithDeadline(fn, ...args);
     }
 }
 

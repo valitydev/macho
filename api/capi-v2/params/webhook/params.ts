@@ -2,10 +2,11 @@ import { Webhook, WebhookScope } from '../../codegen';
 import fetch from 'node-fetch';
 import { testWebhookReceiverEndpoint, testWebhookReceiverInternal } from '../../../../settings';
 
-export function webhookParams(scope: WebhookScope, testId: string): Webhook {
+export function webhookParams(scope: WebhookScope, testId: string, partyId: string): Webhook {
     return {
         scope: scope,
-        url: `${testWebhookReceiverInternal}/hooker/${testId}`
+        url: `${testWebhookReceiverInternal}/hooker/${testId}`,
+        partyID: partyId
     } as Webhook;
 }
 
