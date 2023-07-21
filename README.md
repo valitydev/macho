@@ -10,7 +10,7 @@
 
     Требует адаптации к API отдельного сервиса, который пришёл на смену claim management в capi-v2. Сам [API и кодогенерация](Makefile#L74-L75) завезена, и существующие actions к нему уже адаптированы.
 
-* ✴️ `hooks/receive-hook.spec.ts`
+* ❌ `hooks/receive-hook.spec.ts`
 
     Использует неактуальный webhook receiver для полного цикла. Вообще нужно бы найти какую-то замену, на первый взгляд достаточно минимальной обёртки вокруг key-value storage, которая будет представлять собой абстракцию _очередь из полученных HTTP-запросов_.
 
@@ -20,41 +20,26 @@
 
 * ✅ `parties.spec.ts`
 
-* ❌ `payments/crypto.spec.ts`
-
-    Кажется он никогда не работал. Есть ощущение, что вместе с `qiwi.spec.ts` надо засунуть в набор тестов, которые проверяют корректную обработку различных платёжных методов.
-
 * ✅ `payments/direct-recurrent.spec.ts`
 
 * ✴️ `payments/hold-payment.spec.ts`
 
     Валится один тесткейс из-за неполной конфигурации в domain config: платёж не успевает автоматически перейти в статус captured, потому что в конфиге слишком большой hold lifetime.
 
-* ✴️ `payments/instant-payment.spec.ts`
+* ✅ `payments/instant-payment.spec.ts`
 
-    Валятся часть тесткейсов из-за неполной конфигурации в domain config.
+    Нужно доделать 3DS тесты
 
-* ✴️ `payments/payment-resource.spec.ts`
-
-    Валится один тесткейс из-за неполной конфигурации в domain config.
-
-* ❌ `payments/qiwi.spec.ts`
+* ✅ `payments/payment-resource.spec.ts`
 
     Тесткейсы валятся из-за неполной конфигурации в domain config.
 
 * ✅ `payments/refund.spec.ts`
-
-* ❌ `payouts.spec.ts`
-
-    Требует адаптации к актуальным API.
+    Нужно сделать фикс на капи - там в создании рефанда есть матч на пати ид из токена (забыли выпилить)
 
 * ✅ `short-urls.spec.ts`
 
 * ✅ `transaction.spec.ts`
-
-* ❌ `wallet-payout.spec.ts`
-
-    Требует адаптации к актуальным API (?).
 
 * ✅ `wallets/identities.spec.ts`
 
@@ -99,14 +84,13 @@ node ./mocha-tests.js --verbose --file=build/test/invoice-management.spec.js
 
 Пример:
 ```
-node ./mocha-tests.js --file=build/test/payments/instant-payment.spec.js \
+node ./mocha-tests.js --file=build/test/payments/refund.spec.js \
     --auth-endpoint https://auth.stage.empayre.com \
     --external-login merchant@its.demo \
     --external-password Parolec0 \
     --internal-login manager \
     --internal-password Parolec0 \
     --create-test-shop true \
-    --verbose true \
     --test-party-id 639727dc-59c1-41c9-834c-85a1e43c04ea \
     --api-endpoint https://api.stage.empayre.com \
     --admin-endpoint https://iddqd.stage.empayre.com \

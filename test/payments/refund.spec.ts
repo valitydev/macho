@@ -111,6 +111,8 @@ describe('Refunds', () => {
             payment.id,
             refundParamsExternalId
         );
+        // Ignore status as it may change
+        refund1.status = refund2.status;
         refund1.should.be.deep.eq(refund2);
     });
 
