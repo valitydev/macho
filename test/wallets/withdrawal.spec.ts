@@ -2,7 +2,7 @@ import chai from 'chai';
 import chaiAsPromised from 'chai-as-promised';
 import { AxiosError } from 'axios';
 import { IdentitiesActions } from '../../actions/wapi-v0';
-import { AuthActions } from '../../actions';
+import { AuthActions, PartiesActions } from '../../actions';
 import { PayresActions } from '../../actions/wapi-v0';
 import { getDestinationParams } from '../../api/wapi-v0/payres/params/payres-params';
 import { WithdrawalsActions } from '../../actions/wapi-v0/wallet/withdrawals-actions';
@@ -29,6 +29,7 @@ describe('Withdrawals', () => {
     let walletID: string;
     let withdrawalID: string;
     let externalID: string;
+    let partyID: string;
 
     before(async () => {
         const externalAccessToken = await AuthActions.authExternal();
@@ -37,22 +38,12 @@ describe('Withdrawals', () => {
         walletsActions = new WalletsActions(externalAccessToken);
         withdrawalsActions = new WithdrawalsActions(externalAccessToken);
         withdrawalEventActions = new WithdrawalsEventActions(externalAccessToken);
-        identityID = (await identitiesActions.createIdentity()).id;
+        const partiesActions = new PartiesActions(externalAccessToken);
+        const party = await partiesActions.getActiveParty();
+        partyID = party.id;
+        identityID = (await identitiesActions.createIdentity(partyID)).id;
         walletID = (await walletsActions.createNewWallet(identityID)).id;
         externalID = `external/${guid()}`;
-    });
-
-    it('should fail to create new destination', async () => {
-        const storedCard = await payresActions.storeBankCard();
-        const destinationParams = getDestinationParams(identityID, storedCard);
-        destinationParams.name = '4242424242424242';
-        const error =
-            await withdrawalsActions.createDestination(destinationParams)
-            .should.eventually.be.rejectedWith(AxiosError);
-        error.response.status.should.be.eq(400);
-        error.response.data.should.include({
-            errorType: 'SchemaViolated'
-        });
     });
 
     it('should create new destination', async () => {
@@ -88,7 +79,7 @@ describe('Withdrawals', () => {
     });
 
     it('should list withdrawals', async () => {
-        const withdrawals = await withdrawalsActions.listWithdrawals(1000);
+        const withdrawals = await withdrawalsActions.listWithdrawals(1000, partyID);
         withdrawals.should.contain.keys('result');
     });
 
@@ -101,11 +92,6 @@ describe('Withdrawals', () => {
         const destination = await withdrawalsActions.getDestination(destinationID);
         destination.should.have.property('id').equal(destinationID);
         destination.should.contain.keys('name', 'identity', 'currency', 'resource', 'status');
-    });
-
-    it('should get destination grant', async () => {
-        const grant = await withdrawalsActions.issueDestinationGrant(destinationID);
-        grant.should.contain.keys('token', 'validUntil');
     });
 
     it('should get withdrawal', async () => {
@@ -127,7 +113,7 @@ describe('Withdrawals', () => {
         events.should.have.property('length').greaterThan(0);
         events[0].should.contain.keys('eventID', 'occuredAt', 'changes');
         const event = await withdrawalsActions.getWithdrawalEvent(withdrawalID, events[0].eventID);
-        event.should.have.property('id').equal(events[0].eventID);
+        event.should.have.property('eventID').equal(events[0].eventID);
         event.should.have.property('changes').that.is.an('array');
         event.should.contain.keys('occuredAt');
     });

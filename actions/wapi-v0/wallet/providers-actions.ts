@@ -12,7 +12,11 @@ export class ProvidersActions {
     private dispatcher: WAPIDispatcher;
 
     constructor(accessToken: string) {
-        this.dispatcher = new WAPIDispatcher({});
+        this.dispatcher = new WAPIDispatcher({
+            headers: {
+                origin: 'https://dashboard.stage.empayre.com'
+            }
+        });
         this.api = ProvidersApiFp({
             apiKey: `Bearer ${accessToken}`
         });

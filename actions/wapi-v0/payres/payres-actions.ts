@@ -1,4 +1,4 @@
-import { PaymentResourcesApiFp } from '../../../api/wapi-v0/payres/codegen';
+import { WithdrawalResourcesApiFp } from '../../../api/wapi-v0/payres/codegen';
 import { getBankCardParams } from '../../../api/wapi-v0/payres/params/payres-params';
 import { WapiPayresDispatcher } from '../../../utils/codegen-utils';
 
@@ -7,8 +7,12 @@ export class PayresActions {
     private dispatcher: WapiPayresDispatcher;
 
     constructor(accessToken: string) {
-        this.dispatcher = new WapiPayresDispatcher({});
-        this.api = PaymentResourcesApiFp({
+        this.dispatcher = new WapiPayresDispatcher({
+            headers: {
+                origin: 'https://dashboard.stage.empayre.com'
+            }
+        });
+        this.api = WithdrawalResourcesApiFp({
             apiKey: `Bearer ${accessToken}`
         });
     }

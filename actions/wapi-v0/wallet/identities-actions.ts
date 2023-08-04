@@ -7,14 +7,18 @@ export class IdentitiesActions {
     private dispatcher: WAPIDispatcher;
 
     constructor(accessToken: string) {
-        this.dispatcher = new WAPIDispatcher({});
+        this.dispatcher = new WAPIDispatcher({
+            headers: {
+                origin: 'https://dashboard.stage.empayre.com'
+            }
+        });
         this.api = IdentitiesApiFp({
             apiKey: `Bearer ${accessToken}`
         });
     }
 
-    async createIdentity() {
-        const simpleIdentity = getSimpleIdentityParams();
+    async createIdentity(partyID: string) {
+        const simpleIdentity = getSimpleIdentityParams(partyID);
         return this.dispatcher.callMethod(
             this.api.createIdentity,
             simpleIdentity,
@@ -31,14 +35,14 @@ export class IdentitiesActions {
     }
 
     async listIdentities(
-        limit: number,
+        partyID: string,
         providerID?: string,
         continuationToken?: string
     ) {
         return this.dispatcher.callMethod(
             this.api.listIdentities,
             undefined,
-            limit,
+            partyID,
             providerID,
             continuationToken
         );

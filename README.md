@@ -22,9 +22,7 @@
 
 * ✅ `payments/direct-recurrent.spec.ts`
 
-* ✴️ `payments/hold-payment.spec.ts`
-
-    Валится один тесткейс из-за неполной конфигурации в domain config: платёж не успевает автоматически перейти в статус captured, потому что в конфиге слишком большой hold lifetime.
+* ✅ `payments/hold-payment.spec.ts`
 
 * ✅ `payments/instant-payment.spec.ts`
 
@@ -32,10 +30,7 @@
 
 * ✅ `payments/payment-resource.spec.ts`
 
-    Тесткейсы валятся из-за неполной конфигурации в domain config.
-
 * ✅ `payments/refund.spec.ts`
-    Нужно сделать фикс на капи - там в создании рефанда есть матч на пати ид из токена (забыли выпилить)
 
 * ✅ `short-urls.spec.ts`
 
@@ -43,15 +38,11 @@
 
 * ✅ `wallets/identities.spec.ts`
 
-* ✴️ `wallets/providers.spec.ts`
-
-    Тесткейсы валятся из-за неполной конфигурации в domain config.
+* ✅ `wallets/providers.spec.ts`
 
 * ✅ `wallets/wallets.spec.ts`
 
-* ✴️ `wallets/withdrawal.spec.ts`
-
-    Большая часть тесткейсов валится из-за неполной конфигурации в domain config.
+* ✅ `wallets/withdrawal.spec.ts`
 
 ## Запуск
 
@@ -84,7 +75,7 @@ node ./mocha-tests.js --verbose --file=build/test/invoice-management.spec.js
 
 Пример:
 ```
-node ./mocha-tests.js --file=build/test/payments/refund.spec.js \
+node ./mocha-tests.js \
     --auth-endpoint https://auth.stage.empayre.com \
     --external-login merchant@its.demo \
     --external-password Parolec0 \

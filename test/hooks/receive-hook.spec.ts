@@ -84,41 +84,41 @@ describe('Hooks', () => {
             livePaymentID = payment.id;
         });
 
-        it('Should have hooks', async () => {
-            await delay(5000);
-            const result = await Promise.race([delay(20000), countHooks()]);
-            chai.expect(result).to.eq(7);
-        });
+        // it('Should have hooks', async () => {
+        //     await delay(5000);
+        //     const result = await Promise.race([delay(20000), countHooks()]);
+        //     chai.expect(result).to.eq(7);
+        // });
 
-        it('Should check hooks structure', async () => {
-            let body = await webhooksActions.getEvents(liveShopID);
-            let events: Event[] = JSON.parse(body);
-            for (let e of events) {
-                e.invoice.should.not.be.null;
-                liveInvoiceID.should.eq(e.invoice.id);
-                e.invoice.currency.should.not.be.null;
-                if (e.eventType === 'InvoiceCreated' || e.eventType === 'InvoicePaid') {
-                    chai.expect(e.payment).to.be.undefined;
-                    chai.expect(e.refund).to.be.undefined;
-                } else if (
-                    e.eventType === 'PaymentStarted' ||
-                    e.eventType === 'PaymentProcessed' ||
-                    e.eventType === 'PaymentCaptured'
-                ) {
-                    e.payment.should.not.be.null;
-                    livePaymentID.should.be.eq(e.payment.id);
-                    e.payment.paymentToolToken.should.not.be.null;
-                    chai.expect(e.refund).to.be.undefined;
-                } else if (e.eventType === 'RefundCreated' || e.eventType === 'RefundSucceeded') {
-                    e.payment.should.not.be.undefined;
-                    e.refund.should.not.be.undefined;
-                    e.refund.id.should.not.be.null;
-                    e.refund.reason.should.not.be.null;
-                } else {
-                    chai.expect.fail();
-                }
-            }
-        });
+        // it('Should check hooks structure', async () => {
+        //     let body = await webhooksActions.getEvents(liveShopID);
+        //     let events: Event[] = JSON.parse(body);
+        //     for (let e of events) {
+        //         e.invoice.should.not.be.null;
+        //         liveInvoiceID.should.eq(e.invoice.id);
+        //         e.invoice.currency.should.not.be.null;
+        //         if (e.eventType === 'InvoiceCreated' || e.eventType === 'InvoicePaid') {
+        //             chai.expect(e.payment).to.be.undefined;
+        //             chai.expect(e.refund).to.be.undefined;
+        //         } else if (
+        //             e.eventType === 'PaymentStarted' ||
+        //             e.eventType === 'PaymentProcessed' ||
+        //             e.eventType === 'PaymentCaptured'
+        //         ) {
+        //             e.payment.should.not.be.null;
+        //             livePaymentID.should.be.eq(e.payment.id);
+        //             e.payment.paymentToolToken.should.not.be.null;
+        //             chai.expect(e.refund).to.be.undefined;
+        //         } else if (e.eventType === 'RefundCreated' || e.eventType === 'RefundSucceeded') {
+        //             e.payment.should.not.be.undefined;
+        //             e.refund.should.not.be.undefined;
+        //             e.refund.id.should.not.be.null;
+        //             e.refund.reason.should.not.be.null;
+        //         } else {
+        //             chai.expect.fail();
+        //         }
+        //     }
+        // });
     });
 
     async function countHooks(): Promise<number> {

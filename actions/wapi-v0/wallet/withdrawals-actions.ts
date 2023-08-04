@@ -12,7 +12,11 @@ export class WithdrawalsActions {
     private dispatcher: WAPIDispatcher;
 
     constructor(accessToken: string) {
-        this.dispatcher = new WAPIDispatcher({});
+        this.dispatcher = new WAPIDispatcher({
+            headers: {
+                origin: 'https://dashboard.stage.empayre.com'
+            }
+        });
         this.api = WithdrawalsApiFp({
             apiKey: `Bearer ${accessToken}`
         });
@@ -40,6 +44,7 @@ export class WithdrawalsActions {
 
     async listWithdrawals(
         limit: number,
+        partyID: string,
         walletID?: string,
         identityID?: string,
         withdrawalID?: string,
@@ -56,6 +61,7 @@ export class WithdrawalsActions {
             this.api.listWithdrawals,
             limit,
             undefined,
+            partyID,
             walletID,
             identityID,
             withdrawalID,

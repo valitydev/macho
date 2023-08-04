@@ -7,19 +7,23 @@ export class WithdrawalsEventActions extends EventActions {
 
     constructor(accessToken: string) {
         super();
-        this.dispatcher = new WAPIDispatcher({});
+        this.dispatcher = new WAPIDispatcher({
+            headers: {
+                origin: 'https://dashboard.stage.empayre.com'
+            }
+        });
         this.api = WithdrawalsApiFp({
             apiKey: `Bearer ${accessToken}`
         });
     }
 
-    async getEvents(...args: any[]): Promise<WithdrawalEvent[]> {
+    async getEvents(withdrawalID: string, limit: number = 1000, after?: number): Promise<WithdrawalEvent[]> {
         return await this.dispatcher.callMethod(
             this.api.pollWithdrawalEvents,
-            ...args,
-            1000,
-            undefined,
-            undefined
+            withdrawalID,
+            limit,
+            undefined, // Deadline
+            after
         );
     }
 }

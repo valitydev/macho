@@ -26,12 +26,6 @@ export class APIDispatcher {
         const xRequestID = guid();
         return fn.apply(null, [xRequestID, ...args, this.requestOptions])(fetch, this.endpoint);
     }
-
-    callMethodWithDeadline<R = any>(fn: (...args: any[]) => Promise<R>, ...args: any[]): Promise<R> {
-        const xRequestID = guid();
-        // throw new Error('Headers was ' + JSON.stringify(this.requestOptions));
-        return fn.apply(null, [xRequestID, ...args, this.requestOptions])(fetch, this.endpoint);
-    }
 }
 
 export class CAPIDispatcher extends APIDispatcher {
@@ -45,9 +39,8 @@ export class CAPIDispatcher extends APIDispatcher {
     }
 
     callMethodWithDeadline<R = any>(fn: (...args: any[]) => Promise<R>, ...args: any[]): Promise<R> {
-        // Every CAPI method has a xRequestDeadline as last argument
-        // throw new Error('Headers was ' + JSON.stringify(this.requestOptions));
-        return super.callMethodWithDeadline(fn, ...args);
+        // This CAPI methods haven't a xRequestDeadline as last argument
+        return super.callMethod(fn, ...args);
     }
 }
 

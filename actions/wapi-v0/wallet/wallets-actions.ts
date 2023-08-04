@@ -9,7 +9,11 @@ export class WalletsActions {
     private dispatcher: WAPIDispatcher;
 
     constructor(accessToken: string) {
-        this.dispatcher = new WAPIDispatcher({});
+        this.dispatcher = new WAPIDispatcher({
+            headers: {
+                origin: 'https://dashboard.stage.empayre.com'
+            }
+        });
         this.api = WalletsApiFp({
             apiKey: `Bearer ${accessToken}`
         });
@@ -28,11 +32,12 @@ export class WalletsActions {
         return this.dispatcher.callMethod(this.api.getWallet, walletID, undefined);
     }
 
-    async listWallets(identityID?: string) {
+    async listWallets(partyID: string, identityID?: string) {
         return this.dispatcher.callMethod(
             this.api.listWallets,
             1000,
             undefined,
+            partyID,
             identityID,
             undefined,
             undefined
@@ -53,8 +58,8 @@ export class WalletsActions {
         );
     }
 
-    async pollListWallets(identityID?: string) {
-        return until(() => this.listWallets(identityID)).satisfy(list => {
+    async pollListWallets(partyID: string, identityID?: string) {
+        return until(() => this.listWallets(partyID, identityID)).satisfy(list => {
             if (list.result.length < 1) {
                 throw new Error('Request `listWallets` returned 0 wallets');
             }

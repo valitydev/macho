@@ -1,6 +1,6 @@
 import chai from 'chai';
 import { WalletsActions } from '../../actions/wapi-v0/wallet';
-import { AuthActions } from '../../actions';
+import { AuthActions, PartiesActions } from '../../actions';
 import { IdentitiesActions } from '../../actions/wapi-v0';
 import until from '../../utils/until';
 
@@ -9,18 +9,22 @@ chai.should();
 describe('Wallets', () => {
     let walletsActions: WalletsActions;
     let identityActions: IdentitiesActions;
+    let partyID: string;
 
     before(async () => {
         const externalAccessToken = await AuthActions.authExternal();
         walletsActions = new WalletsActions(externalAccessToken);
         identityActions = new IdentitiesActions(externalAccessToken);
+        const partiesActions = new PartiesActions(externalAccessToken);
+        const party = await partiesActions.getActiveParty();
+        partyID = party.id;
     });
 
     describe('Create new wallet', () => {
         let identityID: string;
 
         before(async () => {
-            identityID = (await identityActions.createIdentity()).id;
+            identityID = (await identityActions.createIdentity(partyID)).id;
         });
 
         it('should create new wallet', async () => {
@@ -36,7 +40,7 @@ describe('Wallets', () => {
         let walletID: string;
 
         before(async () => {
-            identityID = (await identityActions.createIdentity()).id;
+            identityID = (await identityActions.createIdentity(partyID)).id;
             walletID = (await walletsActions.createNewWallet(identityID)).id;
         });
 
@@ -48,13 +52,13 @@ describe('Wallets', () => {
         });
 
         it('list wallets', async () => {
-            const list = await walletsActions.listWallets();
+            const list = await walletsActions.listWallets(partyID);
             list.should.have.property('result');
             list.result.should.have.property('length').that.is.a('number');
         });
 
         it("list identity's wallets", async () => {
-            const list = await walletsActions.pollListWallets(identityID);
+            const list = await walletsActions.pollListWallets(partyID, identityID);
             list.should.have.property('result');
             list.result.should.have.property('length').greaterThan(0);
             list.result[0].should.have.property('identity').equal(identityID);
