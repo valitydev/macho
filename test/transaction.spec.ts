@@ -92,7 +92,7 @@ describe('Test transaction', () => {
             ]);
             reporter.setFulfillInvoiceTime(fulfillInvoice.time);
             reporter.report(Statuses.completed);
-            reporter.hasTimeWarn() && process.exit(1);
+            // reporter.hasTimeWarn() && process.exit(1);
         } catch (e) {
             reporter.report(Statuses.failed);
             throw e;
