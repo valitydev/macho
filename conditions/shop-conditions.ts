@@ -45,13 +45,13 @@ export class ShopConditions {
         let result = await this.shopsActions.getShopByID(shopID, party.id);
         if(result == null && createTestShop){
             const claim = await this.claimsActions.createShopClaim(party.id, shopID);
-            await until(() => this.claimsActions.getClaim(party.id, claim.id))
-                .satisfy(claim => {
-                    if (claim.status !== 'pending') {
-                        throw new Error(`Claim ${claim.id} status is ${claim.status} await pending`);
-                    }
-                });
-            await this.adminActions.acceptClaim(party.id, claim.id);
+            // await until(() => this.claimsActions.getClaim(party.id, claim.id))
+            //     .satisfy(claim => {
+            //         if (claim.status !== 'pending') {
+            //             throw new Error(`Claim ${claim.id} status is ${claim.status} await pending`);
+            //         }
+            //     });
+            // await this.adminActions.acceptClaim(party.id, claim.id);
             await until(() => this.claimsActions.getClaim(party.id, claim.id))
             .satisfy(claim => {
                 if (claim.status !== 'accepted') {
