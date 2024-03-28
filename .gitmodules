@@ -20,3 +20,7 @@
 [submodule "schemas/swag-anapi-v2"]
 	path = schemas/swag-anapi-v2
 	url = https://github.com/valitydev/swag-anapi-v2
+[submodule "dominant-config"]
+	path = dominant-config
+	url = https://github.com/valitydev/dominant-config
+	branch = TD-478/add_config

@@ -1,0 +1,31 @@
+#!/bin/bash
+
+AUTH_URL=https://auth.${MACHO_ENV}.stage.empayre.com
+API_URL=https://api.${MACHO_ENV}.stage.empayre.com
+
+touch org.json
+createdAt=$(date -u +%FT%T%z) \
+name="TEST" \
+id=$(uuidgen | tr '[:upper:]' '[:lower:]') \
+owner=$(uuidgen | tr '[:upper:]' '[:lower:]') \
+yq eval '.createdAt = env(createdAt) | .name = env(name) | .id = env(id) | .owner = env(owner)' -o json -i "org.json"
+
+# BEARER_INTERNAL=$(curl -s -X POST ${AUTH_URL}/auth/realms/internal/protocol/openid-connect/token \
+#   -H "Content-Type: application/x-www-form-urlencoded" \
+#   -d "username=${USER_INTERNAL}&password=${PASSWORD_INTERNAL}&client_id=private-api&grant_type=password" | yq '.access_token')
+
+# curl -X GET ${API_URL}/org/v1/orgs/df8e0659-493a-4e5e-b443-71debc2b4f49 -L \
+#   -H "Content-Type: application/json;charset=utf-8" \
+#   -H "Authorization: Bearer ${BEARER_EXTERNAL}"  \
+#   -H "X-Request-ID: $(uuidgen | tr '[:upper:]' '[:lower:]')"
+
+BEARER_EXTERNAL=$(curl -s -X POST ${AUTH_URL}/auth/realms/external/protocol/openid-connect/token \
+  -H "Content-Type: application/x-www-form-urlencoded" \
+  -d "username=${USER_EXTERNAL}&password=${PASSWORD_EXTERNAL}&client_id=common-api&grant_type=password" | yq '.access_token')
+
+PARTY_ID=$(curl -X POST ${API_URL}/org/v1/orgs -L \
+      -H "Content-Type: application/json;charset=utf-8" \
+      -H "Authorization: Bearer ${BEARER_EXTERNAL}" \
+      -H "X-Request-ID: $(uuidgen | tr '[:upper:]' '[:lower:]')" \
+      -H "X-Idempotency-Key: $(uuidgen | tr '[:upper:]' '[:lower:]')" \
+      -d @org.json | yq '.party')
